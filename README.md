@@ -160,7 +160,7 @@ The agent calls `crawl_site`, reads the structured issues, and uses `explain_iss
 
 ## Why I built this
 
-I'm **Sean Ryan**. I've spent 6+ years at **Pendo.io** as a Lead Marketing Engineer and lead engineer, and on the side I'm building **[Spronta](https://spronta.com)** — AI for marketers.
+I'm **Sean Ryan**. I've spent 6+ years as a Lead Marketing Engineer, and on the side I'm building **[Spronta](https://spronta.com)** — AI for marketers.
 
 With AI, it's faster than ever to ship a marketing site — but most of what gets generated is slop that was never built to be found. And the tools meant to catch that fall short: most SEO auditors cost money, don't play nicely with your agents, or tell you *what's* wrong without telling you *how to actually rank* for SEO **and** GEO (Generative Engine Optimization — being cited by AI search like ChatGPT, Perplexity, and Google AI Overviews).
 
