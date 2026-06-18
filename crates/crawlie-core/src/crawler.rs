@@ -474,7 +474,7 @@ fn build_page(url: &Url, depth: usize, o: FetchOutcome, parsed: Option<Parsed>) 
         indexability = Some("Canonicalised".into());
     }
 
-    let mut geo = parsed.as_ref().map(|p| p.geo.clone()).unwrap_or_default();
+    let geo = parsed.as_ref().map(|p| p.geo.clone()).unwrap_or_default();
 
     let mut page = Page {
         url: normalize(url),
@@ -528,13 +528,13 @@ fn build_page(url: &Url, depth: usize, o: FetchOutcome, parsed: Option<Parsed>) 
             .map(|p| p.hreflang.clone())
             .unwrap_or_default(),
         mixed_content: parsed.as_ref().map(|p| p.mixed_content).unwrap_or(0),
-        geo: GeoSignals::default(),
+        geo,
         content_hash: parsed.as_ref().and_then(|p| p.content_hash.clone()),
         duplicate_of: None,
         error: None,
     };
-    geo.score = geo_score(&page);
-    page.geo = geo;
+    // Score against the real signals now that they're on the page.
+    page.geo.score = geo_score(&page);
     page
 }
 
