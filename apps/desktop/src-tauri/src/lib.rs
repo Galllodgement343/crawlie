@@ -2,7 +2,7 @@
 //! that stream progress, plus saved-report history backed by the core
 //! `ReportStore` in the app data directory.
 
-use crawlie_core::{crawl, CancelToken, CrawlConfig, CrawlResult, ReportMeta, ReportStore};
+use crawlie_core::{crawl, report_html, CancelToken, CrawlConfig, CrawlResult, ReportMeta, ReportStore};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -71,6 +71,28 @@ fn delete_report(app: AppHandle, id: String) -> Result<(), String> {
     store(&app).delete(&id).map_err(|e| e.to_string())
 }
 
+/// Render a shareable, self-contained HTML report and save it (to Downloads if
+/// possible). Returns the absolute path written.
+#[tauri::command]
+fn save_html_report(app: AppHandle, result: CrawlResult) -> Result<String, String> {
+    let html = report_html::render(&result);
+    let host = url::Url::parse(&result.config.url)
+        .ok()
+        .and_then(|u| u.host_str().map(|h| h.replace('.', "-")))
+        .unwrap_or_else(|| "site".into());
+    let name = format!("crawlie-{host}-{}.html", result.started_at);
+
+    let dir = app
+        .path()
+        .download_dir()
+        .or_else(|_| app.path().app_data_dir())
+        .map_err(|e| e.to_string())?;
+    let _ = std::fs::create_dir_all(&dir);
+    let path = dir.join(name);
+    std::fs::write(&path, html).map_err(|e| e.to_string())?;
+    Ok(path.to_string_lossy().to_string())
+}
+
 pub fn run() {
     tauri::Builder::default()
         .manage(CrawlState::default())
@@ -79,7 +101,8 @@ pub fn run() {
             cancel_crawl,
             list_reports,
             load_report,
-            delete_report
+            delete_report,
+            save_html_report
         ])
         .run(tauri::generate_context!())
         .expect("error while running crawlie");

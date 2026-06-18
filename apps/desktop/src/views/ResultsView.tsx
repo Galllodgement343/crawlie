@@ -3,7 +3,8 @@ import type { CrawlResult, GeoSignals, Issue, Page, Severity } from "../lib/type
 import { CATEGORY_LABELS } from "../lib/types";
 import { ruleInfo } from "../lib/rules";
 import { Donut, Bars } from "../components/charts";
-import { IconDownload, IconRefresh, IconX, ScoreRing, SeverityBadge, StatusPill } from "../components/ui";
+import { IconDownload, IconRefresh, IconShare, IconX, ScoreRing, SeverityBadge, StatusPill } from "../components/ui";
+import { exportHtml, isTauri } from "../lib/api";
 import { bytes, ms, num, severityRank, shortUrl } from "../lib/format";
 
 type Tab = "overview" | "issues" | "pages";
@@ -11,7 +12,14 @@ type Tab = "overview" | "issues" | "pages";
 export function ResultsView({ result, onReset }: { result: CrawlResult; onReset: () => void }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [page, setPage] = useState<Page | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const s = result.summary;
+
+  async function share() {
+    const path = await exportHtml(result);
+    setToast(path ? `Saved report to ${path}` : "HTML export is available in the desktop app");
+    setTimeout(() => setToast(null), 4500);
+  }
 
   function download(kind: "json" | "csv") {
     let blob: Blob;
@@ -52,9 +60,11 @@ export function ResultsView({ result, onReset }: { result: CrawlResult; onReset:
         <div className="row">
           <button className="btn btn-secondary btn-sm" onClick={() => download("csv")}><IconDownload size={15} /> CSV</button>
           <button className="btn btn-secondary btn-sm" onClick={() => download("json")}><IconDownload size={15} /> JSON</button>
+          <button className="btn btn-secondary btn-sm" onClick={share} title={isTauri() ? "Save a shareable HTML report" : "Available in the desktop app"}><IconShare size={15} /> Share</button>
           <button className="btn btn-primary btn-sm" onClick={onReset}><IconRefresh size={15} /> New crawl</button>
         </div>
       </div>
+      {toast && <div className="toast">{toast}</div>}
 
       <div className="tabs">
         <Tabish id="overview" tab={tab} set={setTab}>Overview</Tabish>

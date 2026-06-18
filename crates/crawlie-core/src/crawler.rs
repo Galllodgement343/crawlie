@@ -77,6 +77,21 @@ fn glob_match(pattern: &str, text: &str) -> bool {
     true
 }
 
+/// Non-HTML asset URLs that should never be crawled or audited as pages.
+fn is_asset(u: &Url) -> bool {
+    let last = u.path().rsplit('/').next().unwrap_or("");
+    let Some(dot) = last.rfind('.') else { return false };
+    let ext = last[dot + 1..].to_ascii_lowercase();
+    matches!(
+        ext.as_str(),
+        "svg" | "png" | "jpg" | "jpeg" | "gif" | "webp" | "avif" | "ico" | "bmp" | "tiff"
+            | "css" | "js" | "mjs" | "cjs" | "json" | "xml" | "rss" | "atom" | "map"
+            | "pdf" | "zip" | "gz" | "tar" | "dmg" | "exe" | "csv"
+            | "woff" | "woff2" | "ttf" | "otf" | "eot"
+            | "mp4" | "webm" | "mov" | "mp3" | "wav" | "ogg" | "avi"
+    )
+}
+
 fn passes_filters(config: &CrawlConfig, url: &str) -> bool {
     if !config.include.is_empty() && !config.include.iter().any(|p| glob_match(p, url)) {
         return false;
@@ -172,7 +187,7 @@ where
             }
             if let Ok(u) = Url::parse(&s) {
                 let same = u.host_str().map(|h| crate::parse::same_site(&host, h)).unwrap_or(false);
-                if same && passes_filters(&config, u.as_str()) {
+                if same && !is_asset(&u) && passes_filters(&config, u.as_str()) {
                     if config.respect_robots && !robots.allowed(&robots_path(&u)) {
                         continue;
                     }
@@ -230,6 +245,9 @@ where
                                 continue;
                             }
                             let Ok(lu) = Url::parse(link) else { continue };
+                            if is_asset(&lu) {
+                                continue;
+                            }
                             if config.respect_robots && !robots.allowed(&robots_path(&lu)) {
                                 if robots_blocked.len() < 200 {
                                     robots_blocked.push(link.clone());

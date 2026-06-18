@@ -41,10 +41,10 @@ export function App() {
   return (
     <div className="app">
       <header className="topbar" data-tauri-drag-region>
-        <button onClick={reset} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }} aria-label="Home">
+        <button onClick={reset} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "inherit", font: "inherit" }} aria-label="Home">
           <Logo />
         </button>
-        <div className="spacer" />
+        <div className="spacer" data-tauri-drag-region />
         <button className="btn btn-ghost btn-sm" onClick={() => setPhase({ name: "reports" })}>
           <IconHistory size={15} /> Reports
         </button>

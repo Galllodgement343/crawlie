@@ -51,6 +51,13 @@ export async function deleteReport(id: string): Promise<void> {
   if (isTauri()) await invoke("delete_report", { id });
 }
 
+/** Render and save a shareable HTML report. Returns the saved file path, or null
+ *  in browser preview (export is a desktop-app feature). */
+export async function exportHtml(result: CrawlResult): Promise<string | null> {
+  if (isTauri()) return invoke<string>("save_html_report", { result });
+  return null;
+}
+
 const DEMO_REPORTS: ReportMeta[] = [
   {
     id: DEMO_RESULT.startedAt + "-acme-example",

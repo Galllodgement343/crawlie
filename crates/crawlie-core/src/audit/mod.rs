@@ -99,6 +99,11 @@ pub fn audit(
         if p.status != 200 {
             continue;
         }
+        // On-page SEO rules only apply to HTML documents — never to assets
+        // (svg/css/js/json/pdf…) that slipped into the link graph.
+        if !is_html {
+            continue;
+        }
 
         // --- Titles & meta ---
         match p.title.as_deref() {

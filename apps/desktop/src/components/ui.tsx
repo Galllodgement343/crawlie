@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CircleAlert, CircleCheck, Info, TriangleAlert } from "lucide-react";
 import type { Severity } from "../lib/types";
 import { statusClass, statusLabel } from "../lib/format";
 
@@ -24,6 +25,7 @@ export const IconTrash = ({ size }: IconProps) => I("M3 6h18M19 6l-1 14a2 2 0 0 
 export const IconGlobe = ({ size }: IconProps) => I("M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20", size);
 export const IconSpark = ({ size }: IconProps) => I("M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.9 2.4L22 18l-2.1.6L19 21l-.9-2.4L16 18l2.1-.6z", size);
 export const IconBack = ({ size }: IconProps) => I("M19 12H5M12 19l-7-7 7-7", size);
+export const IconShare = ({ size }: IconProps) => I("M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13", size);
 
 /** A circular score gauge (0–100) coloured by band. */
 export function ScoreRing({ value, size = 116, stroke = 10, caption }: { value: number; size?: number; stroke?: number; caption?: string }) {
@@ -87,11 +89,19 @@ export function ThemeToggle() {
 }
 
 /* ---------- Badges ---------- */
+const SEV_ICON = {
+  error: CircleAlert,
+  warning: TriangleAlert,
+  notice: Info,
+  good: CircleCheck,
+} as const;
+
 export function SeverityBadge({ severity, count }: { severity: Severity; count?: number }) {
   const label = severity[0].toUpperCase() + severity.slice(1);
+  const Icon = SEV_ICON[severity];
   return (
     <span className={`badge badge-${severity}`}>
-      <span className="dot" />
+      <Icon size={13} strokeWidth={2.25} />
       {label}
       {count !== undefined && <span className="mono" style={{ opacity: 0.7 }}>{count}</span>}
     </span>
