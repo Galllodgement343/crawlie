@@ -1,18 +1,16 @@
 //! crawlie-mcp — a Model Context Protocol server over stdio.
 //!
-//! Exposes the crawlie engine as agent tools:
-//!   - `crawl_site`    — crawl + audit a whole site (SEO + GEO)
-//!   - `audit_url`     — audit a single page
-//!   - `audit_urls`    — audit an explicit list of pages
-//!   - `explain_issue` — why a rule matters and how to fix it
-//!   - `list_rules`    — the full rule catalogue
-//!   - `list_reports` / `get_report` — saved crawl history
+//! Designed so an agent never has to read files or aggregate data itself:
+//! responses are compact and pre-digested (scores, GEO gaps, prioritized fixes,
+//! issues grouped by rule with sample URLs). Full per-page / per-issue detail is
+//! opt-in. Slicing tools operate on saved reports so re-asking never re-crawls.
 //!
-//! Transport is newline-delimited JSON-RPC 2.0 on stdin/stdout. All diagnostics
-//! go to stderr so stdout stays pure protocol.
+//! Transport: newline-delimited JSON-RPC 2.0 on stdin/stdout. Diagnostics go to
+//! stderr so stdout stays pure protocol.
 
 use crawlie_core::{
-    all_rules, crawl, rule_info, top_fixes, CancelToken, CrawlConfig, CrawlMode, ReportStore,
+    all_rules, crawl, geo_gaps, group_issues, rule_info, top_fixes, top_fixes_filtered,
+    CancelToken, Category, CrawlConfig, CrawlMode, CrawlResult, ReportStore,
 };
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -49,7 +47,7 @@ async fn main() {
         let method = req.get("method").and_then(|m| m.as_str()).unwrap_or("");
         let params = req.get("params").cloned().unwrap_or(Value::Null);
         if id.is_none() {
-            continue; // notification
+            continue;
         }
         let id = id.unwrap();
 
@@ -97,7 +95,7 @@ fn tools_list() -> Value {
     json!({ "tools": [
         {
             "name": "crawl_site",
-            "description": "Crawl a website from a seed URL and run a full technical SEO + GEO (Generative Engine Optimization) audit. Respects robots.txt, seeds from sitemap.xml, and returns a health score, a GEO readiness score, per-page data, and grouped issues with severities. Use this for a whole-site audit.",
+            "description": "Crawl a website and run a full technical SEO + GEO audit. Returns a compact, pre-digested result: a one-line headline, scores, a GEO gap breakdown, the prioritized top fixes, and issues grouped by rule with sample URLs. Auto-saves to history so you can slice it later with top_fixes / affected_urls / geo_gaps without re-crawling. Set includeIssues/includePages for full detail.",
             "inputSchema": { "type": "object", "properties": {
                 "url": { "type": "string", "description": "Seed URL (http/https)." },
                 "maxPages": { "type": "integer", "default": 200 },
@@ -106,36 +104,54 @@ fn tools_list() -> Value {
                 "checkExternal": { "type": "boolean", "default": true },
                 "respectRobots": { "type": "boolean", "default": true },
                 "useSitemap": { "type": "boolean", "default": true },
-                "include": { "type": "array", "items": { "type": "string" }, "description": "Only crawl URLs matching these globs." },
-                "exclude": { "type": "array", "items": { "type": "string" }, "description": "Skip URLs matching these globs." },
+                "include": { "type": "array", "items": { "type": "string" } },
+                "exclude": { "type": "array", "items": { "type": "string" } },
+                "includeIssues": { "type": "boolean", "default": false, "description": "Include the full flat issue list (verbose)." },
                 "includePages": { "type": "boolean", "default": false, "description": "Include full per-page data (verbose)." },
-                "saveReport": { "type": "boolean", "default": false, "description": "Persist the report to crawlie's local history." }
+                "saveReport": { "type": "boolean", "default": true }
             }, "required": ["url"] }
         },
         {
             "name": "audit_url",
-            "description": "Fetch and audit a single URL (no crawling). Returns that page's SEO + GEO data and issues. Fast way to check one page.",
-            "inputSchema": { "type": "object", "properties": {
-                "url": { "type": "string" }
-            }, "required": ["url"] }
+            "description": "Fetch and audit a single URL (no crawling). Compact SEO + GEO result.",
+            "inputSchema": { "type": "object", "properties": { "url": { "type": "string" } }, "required": ["url"] }
         },
         {
             "name": "audit_urls",
-            "description": "Audit an explicit list of URLs (no crawling). Use when you want to check specific pages rather than a whole site.",
-            "inputSchema": { "type": "object", "properties": {
-                "urls": { "type": "array", "items": { "type": "string" } }
-            }, "required": ["urls"] }
+            "description": "Audit an explicit list of URLs (no crawling).",
+            "inputSchema": { "type": "object", "properties": { "urls": { "type": "array", "items": { "type": "string" } } }, "required": ["urls"] }
         },
         {
-            "name": "explain_issue",
-            "description": "Explain an audit rule: why it matters for SEO/GEO, how to fix it, and the impact of ignoring it. Pass a rule id from a crawl's issues (e.g. 'title-missing', 'geo-not-answerable').",
+            "name": "top_fixes",
+            "description": "Return the prioritized fixes for a saved report, optionally scoped to one category (e.g. category='geo' for the top GEO fixes). Operates on the latest report by default — no re-crawl.",
             "inputSchema": { "type": "object", "properties": {
-                "rule": { "type": "string" }
+                "reportId": { "type": "string", "description": "Report id, or 'latest' (default)." },
+                "category": { "type": "string", "description": "Filter to a category: response, indexability, links, titles-meta, headings, content, images, canonical, security, performance, mobile, international, social, structured-data, geo." },
+                "limit": { "type": "integer", "default": 8 }
+            } }
+        },
+        {
+            "name": "geo_gaps",
+            "description": "GEO gap breakdown for a saved report: how many indexable pages lack each AI-readiness signal (authorship, dates, structured data, semantic HTML, answer-readiness, question headings).",
+            "inputSchema": { "type": "object", "properties": { "reportId": { "type": "string", "description": "Report id, or 'latest' (default)." } } }
+        },
+        {
+            "name": "affected_urls",
+            "description": "List the URLs affected by a specific rule in a saved report (e.g. rule='geo-no-author').",
+            "inputSchema": { "type": "object", "properties": {
+                "rule": { "type": "string" },
+                "reportId": { "type": "string", "description": "Report id, or 'latest' (default)." },
+                "limit": { "type": "integer", "default": 100 }
             }, "required": ["rule"] }
         },
         {
+            "name": "explain_issue",
+            "description": "Explain an audit rule: why it matters for SEO/GEO, how to fix it, and the impact of ignoring it.",
+            "inputSchema": { "type": "object", "properties": { "rule": { "type": "string" } }, "required": ["rule"] }
+        },
+        {
             "name": "list_rules",
-            "description": "List every audit rule crawlie checks, with category, severity, and a one-line summary. Useful to understand coverage.",
+            "description": "List every audit rule crawlie checks, with category, severity, and a one-line summary.",
             "inputSchema": { "type": "object", "properties": {} }
         },
         {
@@ -145,13 +161,30 @@ fn tools_list() -> Value {
         },
         {
             "name": "get_report",
-            "description": "Load a previously saved crawl report by id (from list_reports).",
+            "description": "Load a saved crawl report (compact by default; set includeIssues/includePages for full detail).",
             "inputSchema": { "type": "object", "properties": {
                 "id": { "type": "string" },
+                "includeIssues": { "type": "boolean", "default": false },
                 "includePages": { "type": "boolean", "default": false }
             }, "required": ["id"] }
         }
     ] })
+}
+
+fn load_report_or_latest(id: Option<&str>) -> Option<CrawlResult> {
+    let store = ReportStore::new(reports_dir());
+    match id {
+        Some(id) if id != "latest" => store.load(id),
+        _ => {
+            let latest = store.list().into_iter().next()?;
+            store.load(&latest.id)
+        }
+    }
+}
+
+fn parse_category(args: &Value) -> Option<Category> {
+    args.get("category")
+        .and_then(|v| serde_json::from_value::<Category>(v.clone()).ok())
 }
 
 async fn tools_call(params: Value) -> Result<Value, String> {
@@ -167,16 +200,20 @@ async fn tools_call(params: Value) -> Result<Value, String> {
                 .get("includePages")
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false);
+            let include_issues = args
+                .get("includeIssues")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             let save = args
                 .get("saveReport")
                 .and_then(|v| v.as_bool())
-                .unwrap_or(false);
+                .unwrap_or(true);
             let mut config: CrawlConfig =
                 serde_json::from_value(args).map_err(|e| format!("invalid arguments: {e}"))?;
             if config.max_pages == 0 {
                 config.max_pages = 200;
             }
-            run(config, include_pages, save).await
+            run(config, include_pages, include_issues, save).await
         }
         "audit_url" => {
             let url = args
@@ -187,7 +224,7 @@ async fn tools_call(params: Value) -> Result<Value, String> {
             let mut config = CrawlConfig::new(url);
             config.mode = CrawlMode::Page;
             config.max_depth = 0;
-            run(config, true, false).await
+            run(config, true, true, false).await
         }
         "audit_urls" => {
             let urls: Vec<String> = args
@@ -206,7 +243,49 @@ async fn tools_call(params: Value) -> Result<Value, String> {
             config.mode = CrawlMode::List;
             config.urls = urls;
             config.max_depth = 0;
-            run(config, true, false).await
+            run(config, true, true, false).await
+        }
+        "top_fixes" => {
+            let id = args.get("reportId").and_then(|v| v.as_str());
+            let report =
+                load_report_or_latest(id).ok_or("no saved report found — run crawl_site first")?;
+            let category = parse_category(&args);
+            let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(8) as usize;
+            text_result(
+                serde_json::to_string_pretty(&top_fixes_filtered(&report.issues, category, limit))
+                    .unwrap_or_default(),
+            )
+        }
+        "geo_gaps" => {
+            let id = args.get("reportId").and_then(|v| v.as_str());
+            let report =
+                load_report_or_latest(id).ok_or("no saved report found — run crawl_site first")?;
+            text_result(serde_json::to_string_pretty(&geo_gaps(&report.pages)).unwrap_or_default())
+        }
+        "affected_urls" => {
+            let rule = args
+                .get("rule")
+                .and_then(|v| v.as_str())
+                .ok_or("missing rule")?
+                .to_string();
+            let id = args.get("reportId").and_then(|v| v.as_str());
+            let report =
+                load_report_or_latest(id).ok_or("no saved report found — run crawl_site first")?;
+            let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(100) as usize;
+            let urls: Vec<&str> = report
+                .issues
+                .iter()
+                .filter(|i| i.rule == rule)
+                .map(|i| i.url.as_str())
+                .take(limit)
+                .collect();
+            let total = report.issues.iter().filter(|i| i.rule == rule).count();
+            text_result(
+                serde_json::to_string_pretty(
+                    &json!({ "rule": rule, "total": total, "urls": urls }),
+                )
+                .unwrap_or_default(),
+            )
         }
         "explain_issue" => {
             let rule = args
@@ -232,8 +311,12 @@ async fn tools_call(params: Value) -> Result<Value, String> {
                 .get("includePages")
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false);
+            let include_issues = args
+                .get("includeIssues")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             match ReportStore::new(reports_dir()).load(id) {
-                Some(result) => result_payload(&result, include_pages),
+                Some(result) => result_payload(&result, include_pages, include_issues),
                 None => Err(format!("report '{id}' not found")),
             }
         }
@@ -241,32 +324,54 @@ async fn tools_call(params: Value) -> Result<Value, String> {
     }
 }
 
-async fn run(config: CrawlConfig, include_pages: bool, save: bool) -> Result<Value, String> {
+async fn run(
+    config: CrawlConfig,
+    include_pages: bool,
+    include_issues: bool,
+    save: bool,
+) -> Result<Value, String> {
     let result = crawl(config, |_| {}, CancelToken::new())
         .await
         .map_err(|e| e.to_string())?;
     if save {
         let _ = ReportStore::new(reports_dir()).save(&result);
     }
-    result_payload(&result, include_pages)
+    result_payload(&result, include_pages, include_issues)
+}
+
+fn headline(r: &CrawlResult) -> String {
+    let s = &r.summary;
+    let lead = top_fixes(&r.issues, 1)
+        .first()
+        .map(|f| format!("{} ({} affected)", f.title, f.count))
+        .unwrap_or_else(|| "no issues".into());
+    format!(
+        "Health {}/100 · GEO {}/100 · {} pages · {} errors, {} warnings, {} notices. Top fix: {}.",
+        s.health_score, s.geo_score, s.total_pages, s.errors, s.warnings, s.notices, lead
+    )
 }
 
 fn result_payload(
-    result: &crawlie_core::CrawlResult,
+    result: &CrawlResult,
     include_pages: bool,
+    include_issues: bool,
 ) -> Result<Value, String> {
     let mut payload = json!({
+        "headline": headline(result),
         "summary": result.summary,
-        "issues": result.issues,
+        "geoGaps": geo_gaps(&result.pages),
         "topFixes": top_fixes(&result.issues, 8),
+        "issuesByRule": group_issues(&result.issues, 15),
         "robotsFound": result.robots_found,
         "sitemapUrls": result.sitemap_urls,
         "llmsTxtFound": result.llms_txt_found,
+        "pageCount": result.pages.len(),
     });
+    if include_issues {
+        payload["issues"] = serde_json::to_value(&result.issues).unwrap_or(Value::Null);
+    }
     if include_pages {
         payload["pages"] = serde_json::to_value(&result.pages).unwrap_or(Value::Null);
-    } else {
-        payload["pageCount"] = json!(result.pages.len());
     }
     text_result(serde_json::to_string_pretty(&payload).unwrap_or_default())
 }

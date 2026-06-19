@@ -367,6 +367,35 @@ pub struct CrawlResult {
     pub started_at: u64,
 }
 
+/// Site-wide GEO gap analysis: how many indexable pages lack each AI-readiness
+/// signal. Pre-computed so agents don't have to aggregate it themselves.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GeoGaps {
+    /// Indexable HTML pages considered.
+    pub pages: usize,
+    pub missing_author: usize,
+    pub missing_date: usize,
+    pub no_structured_data: usize,
+    pub no_semantic_html: usize,
+    pub not_answerable: usize,
+    pub no_question_headings: usize,
+    pub thin: usize,
+}
+
+/// Issues collapsed to one entry per rule, with a sample of affected URLs —
+/// the compact shape agents want instead of the raw per-page list.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IssueGroup {
+    pub rule: String,
+    pub title: String,
+    pub category: Category,
+    pub severity: Severity,
+    pub count: usize,
+    pub sample_urls: Vec<String>,
+}
+
 /// A prioritized recommended fix — an issue type ranked by impact, with guidance.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

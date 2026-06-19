@@ -1,7 +1,7 @@
 //! Scoring: a per-page GEO (Generative Engine Optimization) readiness score and
 //! an overall site health score. Both are 0–100 and intentionally explainable.
 
-use crate::types::{Category, Issue, Page, Severity};
+use crate::types::{Category, GeoGaps, Issue, Page, Severity};
 use std::collections::{HashMap, HashSet};
 use url::Url;
 
@@ -134,6 +134,40 @@ pub fn health_score(pages: &[Page], issues: &[Issue]) -> u8 {
     let per_page = weight / n;
     let penalty = (per_page * 12.0).min(100.0);
     (100.0 - penalty).round().clamp(0.0, 100.0) as u8
+}
+
+/// Count how many indexable HTML pages lack each GEO signal, so agents get the
+/// aggregate ("82 of 86 pages missing authorship") without computing it.
+pub fn geo_gaps(pages: &[Page]) -> GeoGaps {
+    let mut g = GeoGaps::default();
+    for p in pages
+        .iter()
+        .filter(|p| p.status == 200 && p.indexable && p.word_count > 50)
+    {
+        g.pages += 1;
+        if !p.geo.has_author {
+            g.missing_author += 1;
+        }
+        if !p.geo.has_date {
+            g.missing_date += 1;
+        }
+        if !p.geo.structured_data {
+            g.no_structured_data += 1;
+        }
+        if !p.geo.semantic_html {
+            g.no_semantic_html += 1;
+        }
+        if !p.geo.answerable {
+            g.not_answerable += 1;
+        }
+        if p.geo.question_headings == 0 {
+            g.no_question_headings += 1;
+        }
+        if p.word_count < 300 {
+            g.thin += 1;
+        }
+    }
+    g
 }
 
 /// Average GEO score across indexable HTML pages.
