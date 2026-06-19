@@ -22,6 +22,7 @@ jobs:
           - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, asset: linux-x64, npmos: linux, npmcpu: x64, ext: "" }
           - { os: windows-latest, target: x86_64-pc-windows-msvc, asset: win32-x64, npmos: win32, npmcpu: x64, ext: ".exe" }
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -66,6 +67,7 @@ jobs:
   npm-main:
     needs: npm-platforms
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -95,6 +97,7 @@ jobs:
 
   create-release:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Create draft release
@@ -111,6 +114,9 @@ jobs:
   desktop:
     needs: create-release
     runs-on: macos-latest
+    # Notarization normally finishes in minutes; cap it so a stalled Apple notary
+    # service fails fast instead of burning ~6h of (10x-priced) macOS runner time.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
