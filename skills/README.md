@@ -22,7 +22,7 @@ right native binary automatically. The only prerequisite on the user's machine i
 
 1. **crawlie MCP tools** (`mcp__crawlie__*`) if they exist in the session — fastest, structured.
 2. **`crawlie` CLI** if it's already on `PATH`.
-3. **`npx -y -p crawlie crawlie …`** — on-demand; this *is* the install, no setup.
+3. **`npx -y crawlie …`** — on-demand; this *is* the install, no setup.
 
 A skill cannot make MCP tools appear mid-session (MCP servers load at client startup),
 so the skills drive the CLI by default and use the MCP automatically when it's present.

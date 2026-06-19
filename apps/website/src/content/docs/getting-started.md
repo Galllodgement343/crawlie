@@ -31,7 +31,7 @@ This puts two commands on your `PATH`:
 No install needed at all? Run it on demand with `npx`:
 
 ```bash
-npx -y -p crawlie crawlie crawl https://your-site.com
+npx -y crawlie crawl https://your-site.com
 ```
 
 ### From source

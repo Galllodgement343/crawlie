@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - name: Audit the deploy
-        run: npx -y -p crawlie crawlie crawl "$SITE_URL" --fail-on error --quiet
+        run: npx -y crawlie crawl "$SITE_URL" --fail-on error --quiet
         env:
           SITE_URL: ${{ github.event.deployment_status.target_url }}
 ```
@@ -51,7 +51,7 @@ The same idea works in any pipeline — the non-zero exit code fails the job:
 seo_gate:
   image: node:20
   script:
-    - npx -y -p crawlie crawlie crawl "$SITE_URL" --fail-on error --quiet
+    - npx -y crawlie crawl "$SITE_URL" --fail-on error --quiet
 ```
 
 ## How do I read the result in CI?

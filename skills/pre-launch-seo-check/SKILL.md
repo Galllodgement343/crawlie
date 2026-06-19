@@ -51,7 +51,7 @@ crawlie ships on npm as `crawlie` — no pre-install, no source repo needed.
 
 ## CI snippet (offer if they want it automated)
 ```
-npx -y -p crawlie crawlie crawl "$SITE_URL" --fail-on error --quiet
+npx -y crawlie crawl "$SITE_URL" --fail-on error --quiet
 ```
 Non-zero exit fails the job. Pin a version (`crawlie@<version>`) for reproducible runs.
 

@@ -55,7 +55,7 @@ In order:
 
 1. **crawlie MCP tools** (`mcp__crawlie__*`) if present this session — fastest, structured.
 2. **`crawlie` CLI** if it's already on `PATH`.
-3. **`npx -y -p crawlie crawlie …`** — on-demand; the install *is* the run.
+3. **`npx -y crawlie …`** — on-demand; the install *is* the run.
 
 So the skills work on a machine with nothing installed, and quietly upgrade to the MCP
 when it's wired up.
