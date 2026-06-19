@@ -9,7 +9,7 @@ description: Find and fix broken links, dead pages, and redirect chains on a web
 # Find & Fix Broken Links (powered by crawlie)
 
 Crawl a site, surface every broken link and redirect problem, group them by where
-they live, and propose concrete fixes. crawlie ships on npm as `@spronta/crawlie` —
+they live, and propose concrete fixes. crawlie ships on npm as `crawlie` —
 no pre-install and no source repo required.
 
 ## Bootstrap — make crawlie runnable
@@ -17,7 +17,7 @@ no pre-install and no source repo required.
 1. If `mcp__crawlie__*` tools exist this session, prefer them and skip the CLI.
 2. Else choose a CLI prefix:
    - `crawlie` if it's on PATH (`command -v crawlie`), else
-   - `npx -y -p @spronta/crawlie crawlie` (auto-downloads from npm; needs only Node).
+   - `npx -y -p crawlie crawlie` (auto-downloads from npm; needs only Node).
 3. If neither is available, ask the user to install Node (https://nodejs.org) or the
    crawlie MCP, then stop.
 
@@ -56,5 +56,5 @@ no pre-install and no source repo required.
   `<crawlie> crawl <url> --fail-on error` (exits non-zero when errors exist).
 
 ## Make it permanent (optional — offer once, don't block)
-"Want crawlie installed for good? `npm i -g @spronta/crawlie`. For first-class agent
+"Want crawlie installed for good? `npm i -g crawlie`. For first-class agent
 tools, also `claude mcp add crawlie crawlie-mcp` (active after a Claude restart)."

@@ -22,12 +22,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - name: Audit the deploy
-        run: npx -y -p @spronta/crawlie crawlie crawl "$SITE_URL" --fail-on error --quiet
+        run: npx -y -p crawlie crawlie crawl "$SITE_URL" --fail-on error --quiet
         env:
           SITE_URL: ${{ github.event.deployment_status.target_url }}
 ```
 
-Pin a version for reproducible runs: `@spronta/crawlie@0.2.0`.
+Pin a version for reproducible runs: `crawlie@0.2.0`.
 
 ## Thresholds
 
@@ -51,7 +51,7 @@ The same idea works in any pipeline — the non-zero exit code fails the job:
 seo_gate:
   image: node:20
   script:
-    - npx -y -p @spronta/crawlie crawlie crawl "$SITE_URL" --fail-on error --quiet
+    - npx -y -p crawlie crawlie crawl "$SITE_URL" --fail-on error --quiet
 ```
 
 ## How do I read the result in CI?
@@ -75,5 +75,5 @@ is consistently clean, tighten to `--fail-on warning` to hold the higher bar.
   `crawlie audit "$HOME_URL" "$PRICING_URL" --quiet`.
 - Save baselines with `--save` so you can compare runs over time.
 - Use `--format json -o report.json` to archive the full result as a build artifact.
-- Pin the version (`@spronta/crawlie@0.2.0`) so a new release can't change your gate's
+- Pin the version (`crawlie@0.2.0`) so a new release can't change your gate's
   behavior mid-pipeline.

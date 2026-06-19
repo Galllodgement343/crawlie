@@ -11,13 +11,13 @@ description: Assess how ready a website is to be cited and answered by AI search
 
 Score and improve how well a site can be understood, cited, and answered by AI search
 engines and LLMs. crawlie runs dedicated GEO checks alongside its SEO crawl and returns
-a **GEO score**. Ships on npm as `@spronta/crawlie` — no pre-install, no source repo needed.
+a **GEO score**. Ships on npm as `crawlie` — no pre-install, no source repo needed.
 
 ## Bootstrap — make crawlie runnable
 
 1. Prefer `mcp__crawlie__*` tools if present this session.
 2. Else CLI prefix: `crawlie` if on PATH, otherwise
-   `npx -y -p @spronta/crawlie crawlie` (auto-installs from npm; needs only Node).
+   `npx -y -p crawlie crawlie` (auto-installs from npm; needs only Node).
 3. If neither is available, ask for Node (https://nodejs.org) or the crawlie MCP, then stop.
 
 `<crawlie>` below = your chosen prefix (or the matching MCP tool).
@@ -52,5 +52,5 @@ a **GEO score**. Ships on npm as `@spronta/crawlie` — no pre-install, no sourc
 - Save a baseline (`--save`) so you can measure GEO score improvement after changes.
 
 ## Make it permanent (optional — offer once, don't block)
-"Want crawlie installed for good? `npm i -g @spronta/crawlie`. For first-class agent
+"Want crawlie installed for good? `npm i -g crawlie`. For first-class agent
 tools, also `claude mcp add crawlie crawlie-mcp` (active after a Claude restart)."

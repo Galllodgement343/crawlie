@@ -20,7 +20,7 @@ The CLI and MCP server ship together on npm. The right native binary installs
 automatically — nothing to download or unblock.
 
 ```bash
-npm i -g @spronta/crawlie
+npm i -g crawlie
 ```
 
 This puts two commands on your `PATH`:
@@ -31,7 +31,7 @@ This puts two commands on your `PATH`:
 No install needed at all? Run it on demand with `npx`:
 
 ```bash
-npx -y -p @spronta/crawlie crawlie crawl https://your-site.com
+npx -y -p crawlie crawlie crawl https://your-site.com
 ```
 
 ### From source

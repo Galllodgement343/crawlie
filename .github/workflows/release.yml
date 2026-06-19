@@ -87,7 +87,7 @@ jobs:
             for (const k of Object.keys(p.optionalDependencies || {})) p.optionalDependencies[k] = v;
             fs.writeFileSync("package.json", JSON.stringify(p, null, 2) + "\n");
           '
-      - name: Publish @spronta/crawlie
+      - name: Publish crawlie
         working-directory: npm
         run: npm publish --access public
         env:
@@ -107,7 +107,7 @@ jobs:
           gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1 || \
           gh release create "${GITHUB_REF_NAME}" \
             --title "crawlie ${GITHUB_REF_NAME}" \
-            --notes "**CLI + MCP:** \`npm i -g @spronta/crawlie\`. **Desktop app:** download the signed .dmg below." \
+            --notes "**CLI + MCP:** \`npm i -g crawlie\`. **Desktop app:** download the signed .dmg below." \
             --draft
 
   # Signed + notarized universal macOS desktop app.

@@ -6,7 +6,7 @@
 
 Crawl any site for broken links, redirects, missing metadata, and 40+ SEO & Generative-Engine checks — with plain-English guidance on every fix. Runs locally, ships a CLI and an MCP server, and costs nothing.
 
-[![npm](https://img.shields.io/npm/v/@spronta/crawlie?color=cb3837&logo=npm&label=%40spronta%2Fcrawlie)](https://www.npmjs.com/package/@spronta/crawlie)
+[![npm](https://img.shields.io/npm/v/crawlie?color=cb3837&logo=npm&label=crawlie)](https://www.npmjs.com/package/crawlie)
 [![CI](https://github.com/spronta/crawlie/actions/workflows/ci.yml/badge.svg)](https://github.com/spronta/crawlie/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -35,7 +35,7 @@ Crawl any site for broken links, redirects, missing metadata, and 40+ SEO & Gene
 **The easy way — npm** (installs the `crawlie` CLI and the `crawlie-mcp` server):
 
 ```bash
-npm i -g @spronta/crawlie
+npm i -g crawlie
 ```
 
 **The macOS app** — grab the signed `.dmg` from [Releases](https://github.com/spronta/crawlie/releases).
@@ -102,7 +102,7 @@ crawlie ships a [Model Context Protocol](https://modelcontextprotocol.io) server
 
 ### Connect it
 
-After `npm i -g @spronta/crawlie`, `crawlie-mcp` is on your `PATH`. For **Claude Desktop**, edit `claude_desktop_config.json`:
+After `npm i -g crawlie`, `crawlie-mcp` is on your `PATH`. For **Claude Desktop**, edit `claude_desktop_config.json`:
 
 ```jsonc
 {
@@ -136,7 +136,7 @@ claude plugin install crawlie@spronta
 
 ### Skills (works with *any* agent, even without the MCP)
 
-The [`skills/`](skills/) folder holds standalone [Agent Skills](https://agentskills.io) that teach an agent how to run real audits — full-site SEO + GEO, broken-link fixes, pre-launch gates, and AI-search readiness. Each is **self-contained**: it needs neither this repo nor a pre-installed crawlie. Missing the binary? The skill runs it on demand via `npx -y -p @spronta/crawlie …` (the install *is* the run), and automatically uses the MCP tools when they're present. See [skills/README.md](skills/README.md).
+The [`skills/`](skills/) folder holds standalone [Agent Skills](https://agentskills.io) that teach an agent how to run real audits — full-site SEO + GEO, broken-link fixes, pre-launch gates, and AI-search readiness. Each is **self-contained**: it needs neither this repo nor a pre-installed crawlie. Missing the binary? The skill runs it on demand via `npx -y -p crawlie …` (the install *is* the run), and automatically uses the MCP tools when they're present. See [skills/README.md](skills/README.md).
 
 ### Tools exposed
 

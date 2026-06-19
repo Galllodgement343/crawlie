@@ -12,7 +12,7 @@ order: 9
   (`seo-site-audit`, `fix-broken-links`, `pre-launch-seo-check`, `geo-ai-readiness`)
   that teach any agent to run real audits. Each is self-contained: it needs neither
   the repo nor a pre-installed crawlie, bootstrapping the binary on demand via
-  `npx -y -p @spronta/crawlie` and preferring the MCP tools when present.
+  `npx -y -p crawlie` and preferring the MCP tools when present.
 - **Claude Code plugin** — `.claude-plugin/` manifest bundling the crawlie MCP server
   (auto-run via npx) plus the skills, installable in one step
   (`claude plugin marketplace add spronta/crawlie` → `claude plugin install crawlie@spronta`).
@@ -39,7 +39,7 @@ order: 9
 
 ### Added
 - Initial public release: the crawlie engine (`crawlie-core`), CLI (`crawlie`), and
-  stdio MCP server (`crawlie-mcp`), shipped via npm as `@spronta/crawlie`, plus a
+  stdio MCP server (`crawlie-mcp`), shipped via npm as `crawlie`, plus a
   signed/notarized macOS desktop app.
 - ~40 technical-SEO and GEO (AI-search) checks, Health + GEO scoring, and plain-English
   fix guidance for every rule.

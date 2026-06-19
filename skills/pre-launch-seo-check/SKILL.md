@@ -11,13 +11,13 @@ description: Run a pre-launch / pre-deploy SEO gate on a site or set of pages wi
 
 A go / no-go gate: crawl the target, apply blocking thresholds, and report a clear
 verdict with the exact blockers. Built for "are we safe to ship?" moments and CI.
-crawlie ships on npm as `@spronta/crawlie` — no pre-install, no source repo needed.
+crawlie ships on npm as `crawlie` — no pre-install, no source repo needed.
 
 ## Bootstrap — make crawlie runnable
 
 1. Prefer `mcp__crawlie__*` tools if present this session.
 2. Else CLI prefix: `crawlie` if on PATH, otherwise
-   `npx -y -p @spronta/crawlie crawlie` (auto-installs from npm; needs only Node).
+   `npx -y -p crawlie crawlie` (auto-installs from npm; needs only Node).
 3. If neither is available, ask for Node (https://nodejs.org) or the crawlie MCP, then stop.
 
 `<crawlie>` below = your chosen prefix (or the matching MCP tool).
@@ -51,10 +51,10 @@ crawlie ships on npm as `@spronta/crawlie` — no pre-install, no source repo ne
 
 ## CI snippet (offer if they want it automated)
 ```
-npx -y -p @spronta/crawlie crawlie crawl "$SITE_URL" --fail-on error --quiet
+npx -y -p crawlie crawlie crawl "$SITE_URL" --fail-on error --quiet
 ```
-Non-zero exit fails the job. Pin a version (`@spronta/crawlie@<version>`) for reproducible runs.
+Non-zero exit fails the job. Pin a version (`crawlie@<version>`) for reproducible runs.
 
 ## Make it permanent (optional — offer once, don't block)
-"Want crawlie installed for good? `npm i -g @spronta/crawlie`. For first-class agent
+"Want crawlie installed for good? `npm i -g crawlie`. For first-class agent
 tools, also `claude mcp add crawlie crawlie-mcp` (active after a Claude restart)."

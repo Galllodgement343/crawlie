@@ -5,7 +5,7 @@ Pushing a tag like `v0.1.0` will, in two independent tracks:
 
 **npm (the CLI + MCP):**
 1. Build `crawlie` + `crawlie-mcp` for macOS (arm64/x64), Linux (x64), Windows (x64) and publish a platform package each (`@spronta/crawlie-darwin-arm64`, …) containing the native binaries.
-2. Publish the main **`@spronta/crawlie`** wrapper, which pulls in the one matching platform package via `optionalDependencies` (no install-time download, no Gatekeeper prompt).
+2. Publish the main **`crawlie`** wrapper, which pulls in the one matching platform package via `optionalDependencies` (no install-time download, no Gatekeeper prompt).
 
 **GitHub Release (the desktop app — the only thing to download):**
 3. Build the **signed + notarized universal macOS `.dmg`** and attach it to the release, then publish the release.
@@ -54,7 +54,7 @@ Using the Spronta Apple Developer account:
    git push origin v0.1.0
    ```
 3. Watch the **Release** workflow. When it finishes you'll have:
-   - `npm i -g @spronta/crawlie` live on npm (5 packages: the wrapper + 4 platform packages)
+   - `npm i -g crawlie` live on npm (5 packages: the wrapper + 4 platform packages)
    - a signed `.dmg` on the GitHub Release
 
 > The main wrapper pins its `optionalDependencies` to the exact release version, so all five npm packages always match the tag.

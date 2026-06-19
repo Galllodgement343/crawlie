@@ -1,9 +1,9 @@
-# @spronta/crawlie
+# crawlie
 
 The fast, free, open-source technical **SEO + GEO** crawler — CLI and MCP server. By [Spronta](https://spronta.com).
 
 ```bash
-npm i -g @spronta/crawlie
+npm i -g crawlie
 ```
 
 This installs two commands (the right prebuilt binary for your platform is pulled in automatically as an optional dependency — no download script, nothing to unblock):

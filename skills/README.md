@@ -5,7 +5,7 @@ technical-SEO and AI-search audits with [crawlie](https://github.com/spronta/cra
 
 **Each skill is fully self-contained.** It does **not** require the crawlie source repo,
 and it does **not** require crawlie to be pre-installed. The skill bootstraps crawlie
-from npm on first use (`npx -y -p @spronta/crawlie …`), which downloads and caches the
+from npm on first use (`npx -y -p crawlie …`), which downloads and caches the
 right native binary automatically. The only prerequisite on the user's machine is
 [Node](https://nodejs.org) — or, even better, the crawlie MCP server already registered.
 
@@ -22,11 +22,11 @@ right native binary automatically. The only prerequisite on the user's machine i
 
 1. **crawlie MCP tools** (`mcp__crawlie__*`) if they exist in the session — fastest, structured.
 2. **`crawlie` CLI** if it's already on `PATH`.
-3. **`npx -y -p @spronta/crawlie crawlie …`** — on-demand; this *is* the install, no setup.
+3. **`npx -y -p crawlie crawlie …`** — on-demand; this *is* the install, no setup.
 
 A skill cannot make MCP tools appear mid-session (MCP servers load at client startup),
 so the skills drive the CLI by default and use the MCP automatically when it's present.
-They each offer a one-time "install for good" upgrade (`npm i -g @spronta/crawlie` +
+They each offer a one-time "install for good" upgrade (`npm i -g crawlie` +
 `claude mcp add crawlie crawlie-mcp`) without blocking the task on it.
 
 ## Install
@@ -49,7 +49,7 @@ Or publish/install them through an Agent Skills marketplace. Each folder
 For the first-class experience, register the crawlie MCP once:
 
 ```bash
-npm i -g @spronta/crawlie
+npm i -g crawlie
 claude mcp add crawlie crawlie-mcp
 ```
 

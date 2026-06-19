@@ -26,7 +26,7 @@ function binaryPath(name) {
     dir = path.dirname(require.resolve(`${pkg}/package.json`));
   } catch {
     throw new Error(
-      `crawlie: the platform package ${pkg} isn't installed. Reinstall @spronta/crawlie, ` +
+      `crawlie: the platform package ${pkg} isn't installed. Reinstall crawlie, ` +
         `or build from source: https://github.com/spronta/crawlie`
     );
   }

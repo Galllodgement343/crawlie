@@ -26,7 +26,7 @@ claude plugin install crawlie@spronta
 
 The skills are **self-contained**: they need neither the repo nor a pre-installed
 crawlie. If the binary is missing, the skill runs it on demand via
-`npx -y -p @spronta/crawlie` — and automatically prefers the MCP tools when they're
+`npx -y -p crawlie` — and automatically prefers the MCP tools when they're
 present.
 
 | Skill | Use it to… |
@@ -55,7 +55,7 @@ In order:
 
 1. **crawlie MCP tools** (`mcp__crawlie__*`) if present this session — fastest, structured.
 2. **`crawlie` CLI** if it's already on `PATH`.
-3. **`npx -y -p @spronta/crawlie crawlie …`** — on-demand; the install *is* the run.
+3. **`npx -y -p crawlie crawlie …`** — on-demand; the install *is* the run.
 
 So the skills work on a machine with nothing installed, and quietly upgrade to the MCP
 when it's wired up.

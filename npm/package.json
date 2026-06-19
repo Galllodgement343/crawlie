@@ -1,5 +1,5 @@
 {
-  "name": "@spronta/crawlie",
+  "name": "crawlie",
   "version": "0.1.1",
   "description": "Fast, free, open-source technical SEO + GEO crawler — CLI and MCP server. By Spronta.",
   "bin": {

@@ -11,7 +11,7 @@ part most SEO tools don't have.
 
 ## Connect it
 
-After `npm i -g @spronta/crawlie`, `crawlie-mcp` is on your `PATH`.
+After `npm i -g crawlie`, `crawlie-mcp` is on your `PATH`.
 
 **Claude Code:**
 

@@ -10,7 +10,7 @@ description: Run a complete technical SEO + AI-search audit of a website with cr
 # SEO Site Audit (powered by crawlie)
 
 Deliver a prioritized, plain-English technical SEO + GEO audit of a site.
-crawlie is a fast OSS crawler that ships on npm as `@spronta/crawlie` — you do
+crawlie is a fast OSS crawler that ships on npm as `crawlie` — you do
 **not** need it pre-installed and you do **not** need its source repo.
 
 ## Bootstrap — make crawlie runnable
@@ -21,7 +21,7 @@ Decide once how you'll invoke crawlie, then reuse that prefix for every command:
    `audit_url`, `explain_issue`, etc.) and skip the CLI entirely.
 2. Else pick a CLI prefix:
    - If `crawlie` is on PATH (`command -v crawlie`) → use `crawlie`.
-   - Otherwise → `npx -y -p @spronta/crawlie crawlie`
+   - Otherwise → `npx -y -p crawlie crawlie`
      (downloads + caches from npm on first use; needs only Node/npx — this *is* the install).
 3. If there's neither the MCP nor Node, stop and tell the user:
    "Install Node (https://nodejs.org) and I can run crawlie with no further setup,
@@ -72,5 +72,5 @@ Below, `<crawlie>` means the prefix you chose in step 2 (or the equivalent MCP t
 
 ## Make it permanent (optional — offer once, don't block)
 If you ran via npx, you may offer: "Want crawlie installed for good?
-`npm i -g @spronta/crawlie`. To get first-class agent tools, also run
+`npm i -g crawlie`. To get first-class agent tools, also run
 `claude mcp add crawlie crawlie-mcp` — those activate after you restart Claude."

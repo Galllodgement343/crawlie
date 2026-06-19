@@ -14,7 +14,7 @@
   "mcpServers": {
     "crawlie": {
       "command": "npx",
-      "args": ["-y", "-p", "@spronta/crawlie", "crawlie-mcp"]
+      "args": ["-y", "-p", "crawlie", "crawlie-mcp"]
     }
   }
 }
