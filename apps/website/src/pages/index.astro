@@ -3,6 +3,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import GitHubStarButton from '../components/GitHubStarButton.astro';
+import AsciiBackground from '../components/AsciiBackground.astro';
+import PixelGridBackground from '../components/PixelGridBackground.astro';
 import { fetchStars } from '../lib/github';
 
 const GITHUB = 'https://github.com/spronta/crawlie';
@@ -56,20 +58,23 @@ const cell = (v: string) =>
   v === 'yes' ? '✓' : v === 'no' ? '—' : v;
 ---
 
-<BaseLayout>
+<BaseLayout
+  title="#1 Free Open-Source SEO Audit Tool · crawlie"
+  description="The free, open-source SEO audit tool. crawlie finds 46 technical SEO + AI-search issues, explains every fix in plain English, and runs locally via CLI or MCP."
+>
   <SiteHeader />
 
   <!-- ── Hero ──────────────────────────────────────────────────────── -->
   <main>
     <section class="hero">
+      <PixelGridBackground />
       <div class="container">
-        <a class="badge" href={`${GITHUB}`} target="_blank" rel="noopener">
-          <span class="dot"></span> #4 on Hacker News · the most-upvoted open-source SEO crawler
-        </a>
-        <h1>Technical SEO that<br /><span class="grad">works with your agents.</span></h1>
+        <p class="hero-eyebrow">#1 open-source SEO audit tool</p>
+        <h1>Ship sites that rank in search<br />and get cited by AI.</h1>
         <p class="lede">
-          Free, open-source crawler for SEO <em>and</em> AI-search readiness. 46 checks,
-          plain-English fixes, a CLI and an MCP server. Runs locally. Costs nothing.
+          The free, open-source crawler for technical SEO <em>and</em> AI-search readiness.
+          46 checks, plain-English fixes, a CLI and an MCP server your agents can drive.
+          Runs locally. Costs nothing.
         </p>
 
         <div class="cmd hero-cmd">
@@ -89,16 +94,53 @@ const cell = (v: string) =>
 
     <!-- ── Problem ────────────────────────────────────────────────────── -->
     <section class="problem">
-      <div class="container narrow">
-        <p class="eyebrow">The problem</p>
+      <div class="container narrow center">
+        <p class="eyebrow">Why I built crawlie</p>
         <h2>You can vibe-code a landing page in an afternoon. But is it built to be found?</h2>
         <p>
-          AI made shipping a marketing site trivial — gorgeous, live, fast. The catch:
-          most of what gets generated was never built for search. Missing metadata, broken
-          links, no structured data, nothing for AI search to read. You don’t find out until
-          the traffic never shows up — and the tools that catch it cost real money and can’t
-          talk to your agents. crawlie fixes that.
+          Ok so I ship sites with AI constantly now. Landing pages, docs, whole marketing
+          sites, done in an afternoon instead of weeks. They look clean, they load fast. And
+          then… nothing. No traffic, no signups, just crickets.
         </p>
+        <p>
+          Every single time it was the same boring stuff hiding under the hood. A missing
+          title here, a dead link there, zero structured data, nothing an AI assistant could
+          actually read and quote you on. And the tools that catch this? Either $250-a-year
+          desktop software that feels like it's from 2009, or stuck behind some SaaS paywall.
+          None of them could even talk to the agents that built the site.
+        </p>
+        <p>
+          So yeah, I built crawlie. It's fast, it runs right on your machine, it's fully open
+          source, and it checks <em>both</em> classic SEO and AI-search readiness. Every issue
+          comes with a plain-English fix, and it runs as a CLI and an MCP server your agents
+          can just drive. No paywall, no login, no catch. Just point it at your site and go.
+        </p>
+        <div class="byline">
+          <img
+            class="byline-avatar"
+            src="/sean-avatar.png"
+            alt="Sean Ryan"
+            width="46"
+            height="46"
+            loading="lazy"
+          />
+          <div class="byline-meta">
+            <div class="byline-name">Sean Ryan</div>
+            <div class="byline-role">Lead Marketing Engineer</div>
+          </div>
+          <div class="byline-social">
+            <a href="https://x.com/seandotexe" target="_blank" rel="noopener" aria-label="Sean on X">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </a>
+            <a href="https://www.linkedin.com/in/sean-exe/" target="_blank" rel="noopener" aria-label="Sean on LinkedIn">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -216,6 +258,7 @@ const cell = (v: string) =>
 
     <!-- ── Final CTA ──────────────────────────────────────────────────── -->
     <section class="cta">
+      <AsciiBackground />
       <div class="container narrow center">
         <h2>Audit your site in 30 seconds — free.</h2>
         <p class="muted">One command. No account. No cloud. No catch.</p>
@@ -243,31 +286,40 @@ const cell = (v: string) =>
 
   /* hero */
   .hero {
-    padding: 96px 0 64px;
+    position: relative;
+    overflow: hidden;
+    margin-top: -60px; /* slide up behind the transparent header */
+    padding: 124px 0 64px;
     background:
-      radial-gradient(900px 420px at 50% -120px, rgba(59,158,255,0.13), transparent 70%),
+      radial-gradient(900px 420px at 50% -120px, rgba(0,85,238,0.15), transparent 70%),
       var(--bg);
     text-align: center;
   }
-  .hero .badge { margin-bottom: 28px; }
+  .hero > .container { position: relative; z-index: 1; }
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--baby-blue);
+    margin: 0 0 18px;
+  }
   /* Alpha Lyrae display face for the big marketing headings (scoped to this page).
      It ships a single Medium weight, so pin weight to 500 to avoid faux-bold and
-     ease the tracking, which Geist's tight tracking over-compresses. */
+     ease the tracking, which Geist's tight tracking over-compresses. "calt" turns
+     on the contextual alternates that give the face its signature pixel/glitch. */
   .hero h1,
   h2 {
     font-family: var(--font-display);
     font-weight: 500;
     letter-spacing: -0.01em;
+    font-feature-settings: 'calt' 1;
   }
   .hero h1 {
     font-size: clamp(38px, 6.2vw, 66px);
     margin: 0 0 20px;
-  }
-  .grad {
-    background: linear-gradient(100deg, var(--blue), var(--green));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: #fff;
   }
   .lede {
     max-width: 600px;
@@ -290,9 +342,38 @@ const cell = (v: string) =>
   }
 
   /* problem */
-  .problem { padding-top: 24px; }
-  .problem h2 { font-size: clamp(24px, 3.2vw, 32px); margin-bottom: 16px; }
-  .problem p { color: var(--muted); font-size: 17px; margin: 0; }
+  .problem h2 { font-size: clamp(24px, 3.2vw, 32px); margin-bottom: 20px; }
+  .problem p:not(.eyebrow) {
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.7;
+    max-width: 620px;
+    margin: 0 auto;
+  }
+  .problem p + p { margin-top: 16px; }
+  .problem p :global(em) { color: var(--text); font-style: normal; }
+  .byline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+  .byline-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    object-fit: cover;
+    flex: none;
+  }
+  .byline-meta { text-align: left; }
+  .byline-name { font-family: var(--font-mono); font-size: 14px; color: var(--text); }
+  .byline-role { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+  .byline-social { display: flex; gap: 14px; margin-left: 4px; }
+  .byline-social a { display: inline-flex; color: var(--muted); }
+  .byline-social a:hover { color: var(--baby-blue); text-decoration: none; }
 
   /* features grid */
   .grid {
@@ -388,11 +469,15 @@ const cell = (v: string) =>
 
   /* cta */
   .cta {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 88px;
     background:
-      radial-gradient(700px 300px at 50% 120%, rgba(61,220,145,0.10), transparent 70%),
+      radial-gradient(760px 320px at 50% 118%, rgba(0,85,238,0.16), transparent 70%),
       var(--bg-soft);
     border-top: 1px solid var(--border-soft);
   }
+  .cta > .container { position: relative; z-index: 1; }
   .cta h2 { font-size: clamp(28px, 4vw, 40px); }
   .center-actions { margin-top: 24px; }
 

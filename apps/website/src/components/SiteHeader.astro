@@ -42,9 +42,14 @@ const starLabel = formatStars(stars);
     position: sticky;
     top: 0;
     z-index: 50;
+    border-bottom: 1px solid transparent;
+    transition: background 0.25s ease, border-color 0.25s ease, backdrop-filter 0.25s ease;
+  }
+  /* Transparent at the top so the hero animation shows through; solid once scrolled. */
+  .site-header.scrolled {
     backdrop-filter: saturate(140%) blur(12px);
     background: color-mix(in srgb, var(--bg) 78%, transparent);
-    border-bottom: 1px solid var(--border-soft);
+    border-bottom-color: var(--border-soft);
   }
   .bar {
     display: flex;
@@ -99,3 +104,12 @@ const starLabel = formatStars(stars);
     .nav { gap: 14px; }
   }
 </style>
+
+<script>
+  const header = document.querySelector('.site-header');
+  if (header) {
+    const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 4);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+</script>
