@@ -98,7 +98,7 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
   }
   .sidebar li a:hover { color: var(--text); background: var(--panel); text-decoration: none; }
   .sidebar li a.active {
-    color: var(--blue); background: rgba(59,158,255,0.08);
+    color: var(--blue); background: color-mix(in srgb, var(--blue) 8%, transparent);
     border-left-color: var(--blue);
   }
 

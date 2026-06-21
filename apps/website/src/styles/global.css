@@ -1,6 +1,18 @@
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/geist-mono';
 
+/* Alpha Lyrae — display face for big marketing headings.
+   © Vega Protocol, SIL Open Font License 1.1 (see /fonts/AlphaLyrae-OFL.md). */
+@font-face {
+  font-family: 'Alpha Lyrae';
+  src:
+    url('/fonts/AlphaLyrae-Medium.woff2') format('woff2'),
+    url('/fonts/AlphaLyrae-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ── crawlie design tokens (Geist, launch palette) ───────────────────── */
 :root {
   --bg: #080a0f;
@@ -13,7 +25,7 @@
   --border: #273040;
   --border-soft: #1b212c;
 
-  --blue: #3b9eff;
+  --blue: #0055ee;
   --blue-ink: #0a1726;
   --green: #3ddc91;
   --amber: #f5b544;
@@ -21,6 +33,7 @@
 
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-display: 'Alpha Lyrae', var(--font-sans);
 
   --maxw: 1080px;
   --radius: 12px;
@@ -151,7 +164,7 @@ hr {
   color: #fff;
   font-weight: 600;
 }
-.btn-primary:hover { background: #2f8cf0; }
+.btn-primary:hover { background: color-mix(in srgb, var(--blue) 86%, #fff); }
 .btn-ghost {
   background: var(--panel);
   border-color: var(--border);

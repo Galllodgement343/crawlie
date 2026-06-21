@@ -1,27 +1,11 @@
 ---
 import BrandMark from './BrandMark.astro';
+import { fetchStars, formatStars } from '../lib/github';
 const GITHUB = 'https://github.com/spronta/crawlie';
 
-// Fetch star count at build time; fall back to null if the API is unreachable.
-let stars: number | null = null;
-try {
-  const res = await fetch('https://api.github.com/repos/spronta/crawlie', {
-    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'crawlie-site' },
-  });
-  if (res.ok) {
-    const data = await res.json();
-    if (typeof data.stargazers_count === 'number') stars = data.stargazers_count;
-  }
-} catch {
-  stars = null;
-}
-
-const starLabel =
-  stars === null
-    ? null
-    : stars >= 1000
-    ? `${(stars / 1000).toFixed(stars >= 10000 ? 0 : 1)}k`
-    : String(stars);
+// Fetch star count at build time; falls back to null if the API is unreachable.
+const stars = await fetchStars();
+const starLabel = formatStars(stars);
 ---
 <header class="site-header">
   <div class="container bar">
