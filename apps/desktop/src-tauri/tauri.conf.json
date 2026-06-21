@@ -43,7 +43,7 @@
       "endpoints": [
         "https://github.com/spronta/crawlie/releases/latest/download/latest.json"
       ],
-      "pubkey": "REPLACE_WITH_TAURI_SIGNER_PUBLIC_KEY"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIyOTYyRTkxQURDMDcwNzAKUldSd2NNQ3RrUzZXSWtDU2dvcHYyeG9QNFp4UHp1Nk9tZCtrVVVhTmJlRjlnQTJaVk83RHlIR0sK"
     }
   }
 }
