@@ -6,8 +6,8 @@
 
 use clap::{Parser, Subcommand, ValueEnum};
 use crawlie_core::{
-    all_rules, crawl, report_html, rule_info, top_fixes, CancelToken, CrawlConfig, CrawlMode,
-    CrawlResult, ReportStore, Severity,
+    all_rules, crawl, crawl_to_store, report_html, rule_info, top_fixes, CancelToken, CrawlConfig,
+    CrawlMode, CrawlResult, ReportStore, Severity,
 };
 mod update;
 
@@ -47,6 +47,8 @@ enum Command {
     Reports,
     /// Print or export a saved report by id.
     Report(ReportArgs),
+    /// Compare two saved reports — what improved, regressed, and changed.
+    Diff(DiffArgs),
 }
 
 #[derive(Parser)]
@@ -86,6 +88,11 @@ struct CrawlArgs {
     /// Save the report to the local report store.
     #[arg(long)]
     save: bool,
+    /// Stream pages to an on-disk SQLite store instead of holding them in
+    /// memory — for crawling very large sites without running out of RAM. The
+    /// crawl is written to this path and becomes the queryable artifact.
+    #[arg(long, value_name = "PATH")]
+    store: Option<String>,
     /// Exit non-zero if findings at or above this severity exist.
     #[arg(long, value_enum, default_value_t = FailOn::None)]
     fail_on: FailOn,
@@ -192,6 +199,16 @@ struct ReportArgs {
     delete: bool,
 }
 
+#[derive(Parser)]
+struct DiffArgs {
+    /// The earlier report id (see `crawlie reports`).
+    old: String,
+    /// The later report id to compare against.
+    new: String,
+    #[arg(long, value_enum, default_value_t = Format::Pretty)]
+    format: Format,
+}
+
 #[derive(Copy, Clone, ValueEnum)]
 enum Format {
     Json,
@@ -246,6 +263,7 @@ async fn main() -> ExitCode {
         Command::Explain { rule } => explain(rule),
         Command::Reports => list_reports(),
         Command::Report(a) => show_report(a),
+        Command::Diff(a) => diff_reports(a),
         Command::Update(_) => unreachable!("handled above"),
     };
     // Best-effort, interactive-human-only nudge. Never touches stdout.
@@ -268,7 +286,10 @@ async fn run_crawl(a: CrawlArgs) -> ExitCode {
         ..CrawlConfig::new(&a.url)
     };
     let min = a.severity.map(sev_rank);
-    execute(config, a.format, min, a.output, a.save, a.fail_on, a.quiet).await
+    execute(
+        config, a.format, min, a.output, a.save, a.store, a.fail_on, a.quiet,
+    )
+    .await
 }
 
 async fn run_audit(a: AuditArgs) -> ExitCode {
@@ -290,6 +311,7 @@ async fn run_audit(a: AuditArgs) -> ExitCode {
         None,
         a.output,
         false,
+        None,
         FailOn::None,
         a.quiet,
     )
@@ -632,12 +654,14 @@ fn slop_exit(scores: &[f64], threshold: Option<f64>) -> ExitCode {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn execute(
     config: CrawlConfig,
     format: Format,
     min: Option<u8>,
     output: Option<String>,
     save: bool,
+    store: Option<String>,
     fail_on: FailOn,
     quiet: bool,
 ) -> ExitCode {
@@ -660,11 +684,31 @@ async fn execute(
         }
     };
 
-    let result = match crawl(config, on_event, CancelToken::new()).await {
-        Ok(r) => r,
-        Err(e) => {
-            eprintln!("\rcrawlie: {e}");
-            return ExitCode::from(2);
+    // Streaming (out-of-core) mode spills pages to an on-disk store; the default
+    // mode keeps them in memory.
+    let result = if let Some(path) = store.as_deref() {
+        match crawl_to_store(config, path, on_event, CancelToken::new()).await {
+            Ok((r, _store)) => {
+                if !quiet {
+                    eprintln!(
+                        "\r\x1b[2K  streamed {} pages → {path}",
+                        r.summary.total_pages
+                    );
+                }
+                r
+            }
+            Err(e) => {
+                eprintln!("\rcrawlie: {e}");
+                return ExitCode::from(2);
+            }
+        }
+    } else {
+        match crawl(config, on_event, CancelToken::new()).await {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("\rcrawlie: {e}");
+                return ExitCode::from(2);
+            }
         }
     };
     if !quiet {
@@ -954,6 +998,99 @@ fn show_report(a: ReportArgs) -> ExitCode {
             ExitCode::from(2)
         }
     }
+}
+
+fn diff_reports(a: DiffArgs) -> ExitCode {
+    let store = ReportStore::new(reports_dir());
+    let diff = match store.diff(&a.old, &a.new) {
+        Ok(Some(d)) => d,
+        Ok(None) => {
+            eprintln!(
+                "crawlie: one or both reports not found ('{}', '{}'). Run `crawlie reports`.",
+                a.old, a.new
+            );
+            return ExitCode::from(2);
+        }
+        Err(e) => {
+            eprintln!("crawlie: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    match a.format {
+        Format::Json => {
+            println!("{}", serde_json::to_string_pretty(&diff).unwrap_or_default());
+        }
+        _ => print_diff_pretty(&diff),
+    }
+    ExitCode::SUCCESS
+}
+
+fn signed(n: i16) -> String {
+    if n > 0 {
+        format!("+{n}")
+    } else {
+        n.to_string()
+    }
+}
+
+fn print_diff_pretty(d: &crawlie_core::CrawlDiff) {
+    println!("\n  crawlie diff");
+    println!("  {}", "─".repeat(54));
+    println!(
+        "  {}  →  {}",
+        crawlie_core::timefmt::format_utc(d.old_created_at),
+        crawlie_core::timefmt::format_utc(d.new_created_at)
+    );
+    println!(
+        "  Health {} → {} ({})    GEO {} → {} ({})",
+        d.health_before,
+        d.health_after,
+        signed(d.health_delta),
+        d.geo_before,
+        d.geo_after,
+        signed(d.geo_delta),
+    );
+    println!(
+        "  Pages {} → {}   (+{} new, -{} gone)",
+        d.pages_before,
+        d.pages_after,
+        d.pages_added.len(),
+        d.pages_removed.len(),
+    );
+
+    let total = |v: &[crawlie_core::IssueDelta]| v.iter().map(|d| d.count).sum::<usize>();
+    println!(
+        "\n  Resolved: {} issues across {} rules",
+        total(&d.resolved_issues),
+        d.resolved_issues.len()
+    );
+    for delta in d.resolved_issues.iter().take(10) {
+        println!("    ✓ {:<30} {}", delta.title, delta.count);
+    }
+    println!(
+        "\n  New: {} issues across {} rules",
+        total(&d.new_issues),
+        d.new_issues.len()
+    );
+    for delta in d.new_issues.iter().take(10) {
+        println!(
+            "    [{}] {:<28} {}",
+            delta.severity.label().chars().next().unwrap(),
+            delta.title,
+            delta.count
+        );
+    }
+
+    if !d.pages_added.is_empty() {
+        println!("\n  New pages");
+        for u in d.pages_added.iter().take(10) {
+            println!("    + {}", truncate(u, 70));
+        }
+        if d.pages_added.len() > 10 {
+            println!("    … and {} more", d.pages_added.len() - 10);
+        }
+    }
+    println!();
 }
 
 fn csv(s: &str) -> String {

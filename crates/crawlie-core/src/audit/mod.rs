@@ -44,18 +44,17 @@ fn norm(s: &str) -> String {
     }
 }
 
-/// Run every audit rule over the crawled pages.
-pub fn audit(
-    pages: &[Page],
-    status_map: &HashMap<String, u16>,
-    robots_blocked: &[String],
-    _seed: &Url,
-) -> Vec<Issue> {
-    let mut out = Vec::new();
-    use Category::*;
-    use Severity::*;
+/// Cross-page context an [`audit_one`] call needs: the titles and meta
+/// descriptions that appear on more than one 200 page. Owned (not borrowed from
+/// the page slice) so the streaming crawl can build it from a SQL query.
+#[derive(Default)]
+pub struct CrossPage {
+    pub dup_title: HashSet<String>,
+    pub dup_desc: HashSet<String>,
+}
 
-    // Cross-page duplicate title/description detection (200-only).
+/// Build the duplicate title/description sets across all 200 pages.
+pub fn cross_page(pages: &[Page]) -> CrossPage {
     let mut titles: HashMap<&str, usize> = HashMap::new();
     let mut descs: HashMap<&str, usize> = HashMap::new();
     for p in pages.iter().filter(|p| p.status == 200) {
@@ -66,18 +65,58 @@ pub fn audit(
             *descs.entry(d).or_insert(0) += 1;
         }
     }
-    let dup_title: HashSet<&str> = titles
-        .iter()
-        .filter(|(_, &c)| c > 1)
-        .map(|(&k, _)| k)
-        .collect();
-    let dup_desc: HashSet<&str> = descs
-        .iter()
-        .filter(|(_, &c)| c > 1)
-        .map(|(&k, _)| k)
-        .collect();
+    CrossPage {
+        dup_title: titles
+            .iter()
+            .filter(|(_, &c)| c > 1)
+            .map(|(&k, _)| k.to_string())
+            .collect(),
+        dup_desc: descs
+            .iter()
+            .filter(|(_, &c)| c > 1)
+            .map(|(&k, _)| k.to_string())
+            .collect(),
+    }
+}
 
+/// Run every audit rule over the crawled pages.
+pub fn audit(
+    pages: &[Page],
+    status_map: &HashMap<String, u16>,
+    robots_blocked: &[String],
+    _seed: &Url,
+) -> Vec<Issue> {
+    let mut out = Vec::new();
+    let cp = cross_page(pages);
     for p in pages {
+        audit_one(p, &cp, status_map, &mut out);
+    }
+    // --- Blocked by robots.txt (from crawl-time discovery) ---
+    for blocked in robots_blocked {
+        out.push(issue(
+            "blocked-by-robots",
+            "Blocked by robots.txt",
+            Category::Indexability,
+            Severity::Warning,
+            blocked,
+            None,
+        ));
+    }
+    out
+}
+
+/// Apply every per-page audit rule to one page. Shared by the in-memory
+/// [`audit`] and the streaming crawl, which calls it on pages streamed back from
+/// disk — so the rule logic lives in exactly one place.
+pub fn audit_one(
+    p: &Page,
+    cp: &CrossPage,
+    status_map: &HashMap<String, u16>,
+    out: &mut Vec<Issue>,
+) {
+    use Category::*;
+    use Severity::*;
+    {
         let u = p.url.as_str();
         let is_html = p
             .content_type
@@ -97,7 +136,7 @@ pub fn audit(
                 u,
                 p.error.clone(),
             ));
-            continue;
+            return;
         } else if p.status >= 500 {
             out.push(issue(
                 "server-error",
@@ -171,12 +210,12 @@ pub fn audit(
         }
 
         if p.status != 200 {
-            continue;
+            return;
         }
         // On-page SEO rules only apply to HTML documents — never to assets
         // (svg/css/js/json/pdf…) that slipped into the link graph.
         if !is_html {
-            continue;
+            return;
         }
 
         // --- Titles & meta ---
@@ -210,7 +249,7 @@ pub fn audit(
                         Some(format!("{len} chars")),
                     ));
                 }
-                if dup_title.contains(t) {
+                if cp.dup_title.contains(t) {
                     out.push(issue(
                         "title-duplicate",
                         "Duplicate Title",
@@ -252,7 +291,7 @@ pub fn audit(
                         Some(format!("{len} chars")),
                     ));
                 }
-                if dup_desc.contains(d) {
+                if cp.dup_desc.contains(d) {
                     out.push(issue(
                         "description-duplicate",
                         "Duplicate Meta Description",
@@ -513,7 +552,7 @@ pub fn audit(
 
         // Soft SEO/GEO rules only for indexable pages (no point on noindexed).
         if !p.indexable {
-            continue;
+            return;
         }
 
         // --- Social ---
@@ -548,6 +587,51 @@ pub fn audit(
                 u,
                 None,
             ));
+        }
+        // JSON-LD that doesn't parse is invisible to search engines.
+        if p.invalid_jsonld > 0 {
+            out.push(issue(
+                "structured-data-invalid",
+                "Invalid Structured Data",
+                StructuredData,
+                Error,
+                u,
+                Some(format!(
+                    "{} JSON-LD block(s) failed to parse",
+                    p.invalid_jsonld
+                )),
+            ));
+        }
+        // Per-item required/recommended property gaps (rich-result eligibility).
+        for v in &p.schema_validations {
+            if !v.missing_required.is_empty() {
+                out.push(issue(
+                    "schema-missing-required",
+                    "Schema Missing Required Field",
+                    StructuredData,
+                    Warning,
+                    u,
+                    Some(format!(
+                        "{}: missing {}",
+                        v.type_name,
+                        v.missing_required.join(", ")
+                    )),
+                ));
+            }
+            if !v.missing_recommended.is_empty() {
+                out.push(issue(
+                    "schema-missing-recommended",
+                    "Schema Missing Recommended Field",
+                    StructuredData,
+                    Notice,
+                    u,
+                    Some(format!(
+                        "{}: missing {}",
+                        v.type_name,
+                        v.missing_recommended.join(", ")
+                    )),
+                ));
+            }
         }
 
         // --- GEO (Generative Engine Optimization) ---
@@ -615,18 +699,4 @@ pub fn audit(
             }
         }
     }
-
-    // --- Blocked by robots.txt (from crawl-time discovery) ---
-    for blocked in robots_blocked {
-        out.push(issue(
-            "blocked-by-robots",
-            "Blocked by robots.txt",
-            Category::Indexability,
-            Severity::Warning,
-            blocked,
-            None,
-        ));
-    }
-
-    out
 }

@@ -186,6 +186,13 @@ pub struct Page {
     pub og_image: Option<String>,
     pub twitter_card: Option<String>,
     pub schema_types: Vec<String>,
+    /// Per-schema-item validation: required/recommended properties Google needs
+    /// for rich results that are missing from the page's JSON-LD.
+    #[serde(default)]
+    pub schema_validations: Vec<SchemaValidation>,
+    /// Number of JSON-LD `<script>` blocks that failed to parse as JSON.
+    #[serde(default)]
+    pub invalid_jsonld: usize,
     pub hreflang: Vec<Hreflang>,
 
     // --- security ---
@@ -225,6 +232,21 @@ pub struct GeoSignals {
     pub answerable: bool,
     /// 0–100 readiness score for generative engines.
     pub score: u8,
+}
+
+/// Validation result for one JSON-LD structured-data item (one `@type`),
+/// listing the Google rich-result properties it's missing. Empty vectors mean
+/// the item is complete for that tier.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SchemaValidation {
+    /// The schema.org `@type`, e.g. `Product`, `FAQPage`, `Article`.
+    pub type_name: String,
+    /// Properties Google requires for this type's rich result — omitting these
+    /// makes the page ineligible.
+    pub missing_required: Vec<String>,
+    /// Recommended properties that strengthen the rich result but aren't required.
+    pub missing_recommended: Vec<String>,
 }
 
 /// Severity of an audit finding.
@@ -431,6 +453,49 @@ pub struct ReportMeta {
     pub warnings: usize,
     pub health_score: u8,
     pub geo_score: u8,
+}
+
+/// One rule's net change between two crawls — how many URLs newly triggered it
+/// (or stopped triggering it), with a sample of those URLs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IssueDelta {
+    pub rule: String,
+    pub title: String,
+    pub category: Category,
+    pub severity: Severity,
+    /// Number of URLs that gained (or lost) this issue.
+    pub count: usize,
+    pub sample_urls: Vec<String>,
+}
+
+/// A comparison of two saved crawls of the same site: what got better, what got
+/// worse, and which pages appeared or disappeared. This is the crawl-over-crawl
+/// trend view (Sitebulb-style) that the SQLite store unlocks.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CrawlDiff {
+    pub old_id: String,
+    pub new_id: String,
+    pub old_created_at: u64,
+    pub new_created_at: u64,
+    pub health_before: u8,
+    pub health_after: u8,
+    /// `health_after - health_before` (positive = improved).
+    pub health_delta: i16,
+    pub geo_before: u8,
+    pub geo_after: u8,
+    pub geo_delta: i16,
+    pub pages_before: usize,
+    pub pages_after: usize,
+    /// URLs present in the new crawl but not the old one.
+    pub pages_added: Vec<String>,
+    /// URLs present in the old crawl but gone from the new one.
+    pub pages_removed: Vec<String>,
+    /// Issues newly appearing in the new crawl, grouped by rule.
+    pub new_issues: Vec<IssueDelta>,
+    /// Issues resolved since the old crawl, grouped by rule.
+    pub resolved_issues: Vec<IssueDelta>,
 }
 
 /// Streaming progress events emitted during a crawl.

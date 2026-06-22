@@ -3,8 +3,9 @@
 //! followed by inlink counting, duplicate detection, link verification, scoring,
 //! and the audit pass.
 
-use crate::audit::audit;
+use crate::audit::{audit, audit_one};
 use crate::fetch::{build_client, check_status, fetch, FetchOutcome};
+use crate::pagestore::PageStore;
 use crate::parse::{parse_html, Parsed};
 use crate::robots::Robots;
 use crate::scoring::{geo_score, health_score, site_geo_score};
@@ -144,19 +145,30 @@ fn robots_path(u: &Url) -> String {
     }
 }
 
-/// Run a full crawl + audit. `on_event` receives streaming progress; `cancel`
-/// can stop the crawl early (the partial result is still returned).
-pub async fn crawl<F>(
-    config: CrawlConfig,
-    mut on_event: F,
-    cancel: CancelToken,
-) -> Result<CrawlResult, CrawlError>
-where
-    F: FnMut(CrawlEvent) + Send,
-{
-    let start = Instant::now();
-    let started_at = now_ms();
+/// Everything resolved before the fetch loop: the seed/host/client, robots and
+/// llms.txt findings, and the seeded frontier. Shared by the in-memory [`crawl`]
+/// and the streaming [`crawl_to_store`] so the robots/sitemap/seed logic lives
+/// in one place.
+struct Prep {
+    seed: Url,
+    host: String,
+    client: reqwest::Client,
+    robots: Robots,
+    robots_found: bool,
+    llms_txt_found: bool,
+    frontier: VecDeque<(Url, usize)>,
+    visited: HashSet<String>,
+    sitemap_urls: usize,
+    robots_blocked: Vec<String>,
+    max_pages: usize,
+    follow: bool,
+    concurrency: usize,
+}
 
+async fn prepare<F>(config: &CrawlConfig, on_event: &mut F) -> Result<Prep, CrawlError>
+where
+    F: FnMut(CrawlEvent),
+{
     // Resolve the seed(s) and host depending on mode.
     let seeds: Vec<String> = match config.mode {
         CrawlMode::List if !config.urls.is_empty() => config.urls.clone(),
@@ -209,7 +221,7 @@ where
 
     let mut visited: HashSet<String> = HashSet::new();
     let mut frontier: VecDeque<(Url, usize)> = VecDeque::new();
-    let mut robots_blocked: Vec<String> = Vec::new();
+    let robots_blocked: Vec<String> = Vec::new();
 
     // Seed the frontier.
     for s in &seeds {
@@ -240,7 +252,7 @@ where
                     .host_str()
                     .map(|h| crate::parse::same_site(&host, h))
                     .unwrap_or(false);
-                if same && !is_asset(&u) && passes_filters(&config, u.as_str()) {
+                if same && !is_asset(&u) && passes_filters(config, u.as_str()) {
                     if config.respect_robots && !robots.allowed(&robots_path(&u)) {
                         continue;
                     }
@@ -251,6 +263,51 @@ where
             }
         }
     }
+
+    Ok(Prep {
+        seed,
+        host,
+        client,
+        robots,
+        robots_found,
+        llms_txt_found,
+        frontier,
+        visited,
+        sitemap_urls,
+        robots_blocked,
+        max_pages,
+        follow,
+        concurrency,
+    })
+}
+
+/// Run a full crawl + audit. `on_event` receives streaming progress; `cancel`
+/// can stop the crawl early (the partial result is still returned).
+pub async fn crawl<F>(
+    config: CrawlConfig,
+    mut on_event: F,
+    cancel: CancelToken,
+) -> Result<CrawlResult, CrawlError>
+where
+    F: FnMut(CrawlEvent) + Send,
+{
+    let start = Instant::now();
+    let started_at = now_ms();
+    let Prep {
+        seed,
+        host,
+        client,
+        robots,
+        robots_found,
+        llms_txt_found,
+        mut frontier,
+        mut visited,
+        sitemap_urls,
+        mut robots_blocked,
+        max_pages,
+        follow,
+        concurrency,
+    } = prepare(&config, &mut on_event).await?;
 
     let mut pages: Vec<Page> = Vec::new();
     let mut inflight = FuturesUnordered::new();
@@ -479,6 +536,409 @@ where
     })
 }
 
+/// Like [`crawl`], but streams every fetched page straight to an on-disk
+/// [`PageStore`] at `store_path` instead of accumulating a `Vec<Page>` — so a
+/// site too large to hold in RAM can still be crawled and audited. The cross-
+/// page passes (inlinks, PageRank, dedup, audit) run by streaming pages back
+/// from disk one at a time; peak memory is bounded by compact metadata (a
+/// url→id map, an integer edge graph, the issue list) rather than the corpus.
+///
+/// The returned `CrawlResult` has the full `issues`/`summary` but an **empty
+/// `pages`** — the pages are the store, which is returned alongside it as the
+/// queryable artifact. Audit output is identical to [`crawl`].
+pub async fn crawl_to_store<F>(
+    config: CrawlConfig,
+    store_path: impl AsRef<std::path::Path>,
+    mut on_event: F,
+    cancel: CancelToken,
+) -> Result<(CrawlResult, PageStore), CrawlError>
+where
+    F: FnMut(CrawlEvent) + Send,
+{
+    let start = Instant::now();
+    let started_at = now_ms();
+    let store = PageStore::create(store_path).map_err(|e| CrawlError::Client(e.to_string()))?;
+    let store_path = store.path().to_path_buf();
+    let Prep {
+        seed,
+        host,
+        client,
+        robots,
+        robots_found,
+        llms_txt_found,
+        mut frontier,
+        mut visited,
+        sitemap_urls,
+        mut robots_blocked,
+        max_pages,
+        follow,
+        concurrency,
+    } = prepare(&config, &mut on_event).await?;
+
+    // --- Fetch loop: each finished page is written to disk, not retained. ---
+    let mut inflight = FuturesUnordered::new();
+    let mut started = 0usize;
+    let mut crawled = 0usize;
+    store
+        .begin()
+        .map_err(|e| CrawlError::Client(e.to_string()))?;
+    loop {
+        if cancel.is_cancelled() {
+            break;
+        }
+        while inflight.len() < concurrency && started < max_pages {
+            let Some((u, depth)) = frontier.pop_front() else {
+                break;
+            };
+            started += 1;
+            let client = client.clone();
+            let host = host.clone();
+            inflight.push(async move {
+                let res = fetch(&client, &u, 10).await.map(|o| {
+                    let parsed: Option<Parsed> = if o.is_html {
+                        o.body
+                            .as_deref()
+                            .map(|b| parse_html(b, &o.final_url, &host))
+                    } else {
+                        None
+                    };
+                    (o, parsed)
+                });
+                (u, depth, res)
+            });
+        }
+
+        if inflight.is_empty() {
+            break;
+        }
+
+        if let Some((u, depth, result)) = inflight.next().await {
+            let page = match result {
+                Ok((outcome, parsed)) => {
+                    let page = build_page(&u, depth, outcome, parsed);
+                    visited.insert(normalize_str(&page.final_url));
+                    if follow && depth < config.max_depth {
+                        for link in &page.internal_links {
+                            if visited.len() >= max_pages {
+                                break;
+                            }
+                            if !passes_filters(&config, link) {
+                                continue;
+                            }
+                            let Ok(lu) = Url::parse(link) else { continue };
+                            if is_asset(&lu) {
+                                continue;
+                            }
+                            if config.respect_robots && !robots.allowed(&robots_path(&lu)) {
+                                if robots_blocked.len() < 200 {
+                                    robots_blocked.push(link.clone());
+                                }
+                                continue;
+                            }
+                            let key = normalize_str(link);
+                            if visited.insert(key) {
+                                frontier.push_back((lu, depth + 1));
+                            }
+                        }
+                    }
+                    page
+                }
+                Err(e) => error_page(&u, depth, e.to_string()),
+            };
+            store
+                .insert(&page)
+                .map_err(|e| CrawlError::Client(e.to_string()))?;
+            crawled += 1;
+            on_event(CrawlEvent::Progress {
+                crawled,
+                discovered: visited.len(),
+                queued: frontier.len() + inflight.len(),
+                current: u.to_string(),
+            });
+        }
+    }
+    store
+        .commit()
+        .map_err(|e| CrawlError::Client(e.to_string()))?;
+
+    let ioerr = |e: std::io::Error| CrawlError::Client(e.to_string());
+
+    // Internal-link authority (PageRank) over the on-disk edge graph.
+    let link_scores = crate::scoring::pagerank(&store.adjacency().map_err(ioerr)?);
+    // Inlink counts and duplicate canonicals, as SQL aggregates.
+    let inlink_counts = store.inlink_counts().map_err(ioerr)?;
+    let hash_canon = store.hash_canon().map_err(ioerr)?;
+    // Duplicate title/description sets (the cross-page audit context).
+    let cross = store.cross_page().map_err(ioerr)?;
+
+    // Status map (+ external link verification), streamed from disk.
+    let mut status_map = store.status_map().map_err(ioerr)?;
+    if config.check_external && !cancel.is_cancelled() {
+        const LINK_CHECK_CAP: usize = 1500;
+        let mut targets: Vec<Url> = Vec::new();
+        let mut seen = HashSet::new();
+        store
+            .for_each_page(|_, p| {
+                if targets.len() >= LINK_CHECK_CAP {
+                    return;
+                }
+                for l in p.internal_links.iter().chain(p.external_links.iter()) {
+                    let key = normalize_str(l);
+                    if status_map.contains_key(&key) || !seen.insert(key) {
+                        continue;
+                    }
+                    if let Ok(u) = Url::parse(l) {
+                        targets.push(u);
+                    }
+                }
+            })
+            .map_err(ioerr)?;
+        targets.truncate(LINK_CHECK_CAP);
+        let mut iter = targets.into_iter();
+        let mut checks = FuturesUnordered::new();
+        for _ in 0..concurrency {
+            if let Some(u) = iter.next() {
+                checks.push(verify_link(client.clone(), u));
+            }
+        }
+        while let Some((key, status)) = checks.next().await {
+            status_map.insert(key, status);
+            if cancel.is_cancelled() {
+                break;
+            }
+            if let Some(u) = iter.next() {
+                checks.push(verify_link(client.clone(), u));
+            }
+            on_event(CrawlEvent::Progress {
+                crawled,
+                discovered: visited.len(),
+                queued: checks.len(),
+                current: format!("Verifying links… {} checked", status_map.len()),
+            });
+        }
+    }
+
+    let sitemap_found = if sitemap_urls > 0 || !robots.sitemaps.is_empty() {
+        true
+    } else {
+        match seed.join("/sitemap.xml") {
+            Ok(u) => check_status(&client, &u).await == 200,
+            Err(_) => false,
+        }
+    };
+
+    // --- Audit + summary: stream pages back one at a time. ---
+    let mut issues: Vec<Issue> = Vec::new();
+    let mut acc = SummaryAcc::default();
+    store
+        .for_each_page(|_, mut p| {
+            // Derived fields the audit reads must be set before auditing.
+            p.inlinks = inlink_counts
+                .get(&normalize_str(&p.final_url))
+                .copied()
+                .unwrap_or(0);
+            p.duplicate_of = p.content_hash.as_ref().and_then(|h| {
+                hash_canon
+                    .get(h)
+                    .filter(|canon| *canon != &p.url)
+                    .cloned()
+            });
+            acc.add(&p);
+            audit_one(&p, &cross, &status_map, &mut issues);
+        })
+        .map_err(ioerr)?;
+    // Robots/sitemap/robots-blocked issues are appended here (the per-page audit
+    // ran inline above instead of via `audit`).
+    for blocked in &robots_blocked {
+        issues.push(Issue {
+            rule: "blocked-by-robots".into(),
+            title: "Blocked by robots.txt".into(),
+            category: Category::Indexability,
+            severity: Severity::Warning,
+            url: blocked.clone(),
+            detail: None,
+        });
+    }
+    if !robots_found {
+        issues.push(Issue {
+            rule: "no-robots-txt".into(),
+            title: "No robots.txt".into(),
+            category: Category::Indexability,
+            severity: Severity::Notice,
+            url: seed.to_string(),
+            detail: None,
+        });
+    }
+    if !sitemap_found {
+        issues.push(Issue {
+            rule: "no-sitemap".into(),
+            title: "No XML sitemap".into(),
+            category: Category::Indexability,
+            severity: Severity::Warning,
+            url: seed.to_string(),
+            detail: None,
+        });
+    }
+    if !llms_txt_found {
+        issues.push(Issue {
+            rule: "geo-no-llms-txt".into(),
+            title: "No llms.txt".into(),
+            category: Category::Geo,
+            severity: Severity::Notice,
+            url: seed.to_string(),
+            detail: None,
+        });
+    }
+
+    // Per-page SEO penalty (Yoast-style), grouped by URL — applied in write-back.
+    let seo_penalty = seo_penalty_by_url(&issues);
+
+    // --- Write derived fields back into the stored pages (bounded memory: a
+    // second read connection streams pages while this connection updates). ---
+    let reader = PageStore::open(&store_path).map_err(ioerr)?;
+    store.begin().map_err(ioerr)?;
+    reader
+        .for_each_page(|id, mut p| {
+            p.inlinks = inlink_counts
+                .get(&normalize_str(&p.final_url))
+                .copied()
+                .unwrap_or(0);
+            p.link_score = link_scores.get(id).copied().unwrap_or(0.0);
+            p.duplicate_of = p.content_hash.as_ref().and_then(|h| {
+                hash_canon
+                    .get(h)
+                    .filter(|canon| *canon != &p.url)
+                    .cloned()
+            });
+            p.seo_score = if p.status == 200 {
+                let pen = seo_penalty.get(&normalize_str(&p.url)).copied().unwrap_or(0.0);
+                (100.0 - pen).clamp(0.0, 100.0).round() as u8
+            } else {
+                0
+            };
+            let _ = store.put_blob(id, &p);
+        })
+        .map_err(ioerr)?;
+    store.commit().map_err(ioerr)?;
+
+    let summary = acc.finish(&issues, start.elapsed().as_millis() as u64);
+    on_event(CrawlEvent::Done {
+        summary: summary.clone(),
+    });
+
+    let result = CrawlResult {
+        config,
+        pages: Vec::new(),
+        issues,
+        summary,
+        robots_found,
+        sitemap_urls,
+        sitemap_found,
+        robots_blocked,
+        llms_txt_found,
+        started_at,
+    };
+    Ok((result, store))
+}
+
+/// Per-URL SEO penalty from non-GEO issues — the streaming counterpart of
+/// [`crate::scoring::page_seo_scores`]'s penalty step.
+fn seo_penalty_by_url(issues: &[Issue]) -> HashMap<String, f32> {
+    let mut penalty: HashMap<String, f32> = HashMap::new();
+    for i in issues {
+        if i.category == Category::Geo {
+            continue;
+        }
+        let w = match i.severity {
+            Severity::Error => 15.0,
+            Severity::Warning => 7.0,
+            Severity::Notice => 2.0,
+            Severity::Good => 0.0,
+        };
+        *penalty.entry(normalize_str(&i.url)).or_insert(0.0) += w;
+    }
+    penalty
+}
+
+/// Streaming accumulator for the page-derived parts of [`Summary`] — fed one
+/// page at a time so the streaming crawl never holds the whole corpus.
+#[derive(Default)]
+struct SummaryAcc {
+    n: usize,
+    by_status: BTreeMap<String, usize>,
+    by_depth: BTreeMap<String, usize>,
+    total_rt: u64,
+    rt_count: u64,
+    indexable: usize,
+    dupes: usize,
+    geo_sum: u32,
+    geo_count: u32,
+}
+
+impl SummaryAcc {
+    fn add(&mut self, p: &Page) {
+        self.n += 1;
+        *self.by_status.entry(p.status.to_string()).or_insert(0) += 1;
+        *self.by_depth.entry(p.depth.to_string()).or_insert(0) += 1;
+        if p.status == 200 {
+            self.total_rt += p.response_time_ms;
+            self.rt_count += 1;
+        }
+        if p.indexable {
+            self.indexable += 1;
+        }
+        if p.duplicate_of.is_some() {
+            self.dupes += 1;
+        }
+        if p.status == 200 && p.indexable {
+            self.geo_sum += p.geo.score as u32;
+            self.geo_count += 1;
+        }
+    }
+
+    fn finish(self, issues: &[Issue], duration_ms: u64) -> Summary {
+        let (mut errors, mut warnings, mut notices, mut good) = (0, 0, 0, 0);
+        let mut by_category: BTreeMap<String, usize> = BTreeMap::new();
+        for i in issues {
+            match i.severity {
+                Severity::Error => errors += 1,
+                Severity::Warning => warnings += 1,
+                Severity::Notice => notices += 1,
+                Severity::Good => good += 1,
+            }
+            if i.severity != Severity::Good {
+                *by_category
+                    .entry(i.category.label().to_string())
+                    .or_insert(0) += 1;
+            }
+        }
+        Summary {
+            total_pages: self.n,
+            errors,
+            warnings,
+            notices,
+            good,
+            health_score: crate::scoring::health_score_n(self.n, issues),
+            geo_score: if self.geo_count > 0 {
+                (self.geo_sum / self.geo_count) as u8
+            } else {
+                0
+            },
+            avg_response_ms: if self.rt_count > 0 {
+                self.total_rt / self.rt_count
+            } else {
+                0
+            },
+            indexable_pages: self.indexable,
+            duplicate_pages: self.dupes,
+            by_status: self.by_status,
+            by_category,
+            by_depth: self.by_depth,
+            duration_ms,
+        }
+    }
+}
+
 fn build_page(url: &Url, depth: usize, o: FetchOutcome, parsed: Option<Parsed>) -> Page {
     let final_url_str = o.final_url.to_string();
     let canonical = parsed.as_ref().and_then(|p| p.canonical.clone());
@@ -573,6 +1033,11 @@ fn build_page(url: &Url, depth: usize, o: FetchOutcome, parsed: Option<Parsed>) 
             .as_ref()
             .map(|p| p.schema_types.clone())
             .unwrap_or_default(),
+        schema_validations: parsed
+            .as_ref()
+            .map(|p| p.schema_validations.clone())
+            .unwrap_or_default(),
+        invalid_jsonld: parsed.as_ref().map(|p| p.invalid_jsonld).unwrap_or(0),
         hreflang: parsed
             .as_ref()
             .map(|p| p.hreflang.clone())
@@ -629,6 +1094,8 @@ fn error_page(url: &Url, depth: usize, error: String) -> Page {
         og_image: None,
         twitter_card: None,
         schema_types: Vec::new(),
+        schema_validations: Vec::new(),
+        invalid_jsonld: 0,
         hreflang: Vec::new(),
         mixed_content: 0,
         geo: GeoSignals::default(),

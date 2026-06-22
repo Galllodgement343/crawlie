@@ -118,6 +118,8 @@ fn ok_page(url: &str) -> Page {
         og_image: Some("https://example.com/og.png".into()),
         twitter_card: Some("summary".into()),
         schema_types: vec!["Article".into()],
+        schema_validations: vec![],
+        invalid_jsonld: 0,
         hreflang: vec![],
         mixed_content: 0,
         geo: GeoSignals {

@@ -1,7 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { CrawlConfig, CrawlResult } from "./lib/types";
-import { cancelCrawl, startCrawl } from "./lib/api";
-import { Logo, ThemeToggle, IconExternal, IconHistory, IconSettings } from "./components/ui";
+import { cancelCrawl, startCrawl, watchFullscreen } from "./lib/api";
+import { Logo, ThemeToggle, IconExternal, IconHistory, IconSettings, IconSearch, IconChevron } from "./components/ui";
 import { StartView } from "./views/StartView";
 import { CrawlingView, type Progress } from "./views/CrawlingView";
 import { ResultsView } from "./views/ResultsView";
@@ -41,28 +41,89 @@ export function App() {
   const reset = useCallback(() => setPhase({ name: "idle" }), []);
   const cancel = useCallback(() => cancelCrawl(), []);
 
+  const [collapsed, setCollapsed] = useState<boolean>(
+    () => typeof localStorage !== "undefined" && localStorage.getItem("sidebar-collapsed") === "1"
+  );
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((c) => {
+      const next = !c;
+      try {
+        localStorage.setItem("sidebar-collapsed", next ? "1" : "0");
+      } catch {
+        /* storage may be unavailable; ignore */
+      }
+      return next;
+    });
+  }, []);
+
+  // Drop the sidebar's traffic-light spacing when the window is fullscreen.
+  useEffect(() => {
+    let un: (() => void) | undefined;
+    watchFullscreen().then((u) => {
+      un = u;
+    });
+    return () => un?.();
+  }, []);
+
+  const inCrawl =
+    phase.name === "idle" || phase.name === "crawling" || phase.name === "done" || phase.name === "error";
+
   return (
     <div className="app">
-      <header className="topbar" data-tauri-drag-region>
-        <button onClick={reset} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "inherit", font: "inherit" }} aria-label="Home">
+      <aside className={`sidebar${collapsed ? " collapsed" : ""}`} data-tauri-drag-region>
+        <button className="sidebar-brand" onClick={reset} aria-label="Home">
           <Logo />
         </button>
-        <div className="spacer" data-tauri-drag-region />
-        <button className="btn btn-ghost btn-sm" onClick={() => setPhase({ name: "reports" })}>
-          <IconHistory size={15} /> Reports
-        </button>
-        <a className="btn btn-ghost btn-sm" href="https://github.com/spronta/crawlie" target="_blank" rel="noreferrer">
-          GitHub <IconExternal size={14} />
-        </a>
-        <button className="icon-btn" aria-label="Settings" onClick={() => setPhase({ name: "settings" })}>
-          <IconSettings size={16} />
-        </button>
-        <ThemeToggle />
-      </header>
+        <nav className="sidebar-nav">
+          <button
+            className={`nav-item${inCrawl ? " active" : ""}`}
+            onClick={reset}
+            title="New crawl"
+          >
+            <IconSearch size={16} /> <span className="nav-label">New crawl</span>
+          </button>
+          <button
+            className={`nav-item${phase.name === "reports" ? " active" : ""}`}
+            onClick={() => setPhase({ name: "reports" })}
+            title="Reports"
+          >
+            <IconHistory size={16} /> <span className="nav-label">Reports</span>
+          </button>
+        </nav>
+        <div className="sidebar-foot">
+          <a
+            className="nav-item"
+            href="https://github.com/spronta/crawlie"
+            target="_blank"
+            rel="noreferrer"
+            title="GitHub"
+          >
+            <IconExternal size={15} /> <span className="nav-label">GitHub</span>
+          </a>
+          <button
+            className={`nav-item${phase.name === "settings" ? " active" : ""}`}
+            onClick={() => setPhase({ name: "settings" })}
+            title="Settings"
+          >
+            <IconSettings size={16} /> <span className="nav-label">Settings</span>
+          </button>
+          <div className="sidebar-foot-row">
+            <ThemeToggle />
+            <button
+              className="icon-btn collapse-toggle"
+              onClick={toggleCollapsed}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <IconChevron size={16} />
+            </button>
+          </div>
+        </div>
+      </aside>
 
-      <UpdateBanner />
-
-      <main className="main">
+      <div className="content">
+        <UpdateBanner />
+        <main className="main">
         {phase.name === "idle" && <StartView onStart={start} />}
         {phase.name === "crawling" && <CrawlingView config={phase.config} progress={phase.progress} onCancel={cancel} />}
         {phase.name === "done" && <ResultsView result={phase.result} onReset={reset} />}
@@ -75,7 +136,8 @@ export function App() {
             <button className="btn btn-primary" onClick={reset}>Try again</button>
           </div>
         )}
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

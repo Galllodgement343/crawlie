@@ -9,6 +9,25 @@ export function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
+/** Reflect the window's fullscreen state onto `<html data-fullscreen>` so CSS can
+ *  drop the macOS traffic-light spacing in fullscreen. No-op in a browser. */
+export async function watchFullscreen(): Promise<() => void> {
+  if (!isTauri()) return () => {};
+  const { getCurrentWindow } = await import("@tauri-apps/api/window");
+  const win = getCurrentWindow();
+  const apply = async () => {
+    try {
+      const fs = await win.isFullscreen();
+      document.documentElement.setAttribute("data-fullscreen", String(fs));
+    } catch {
+      /* window may be unavailable mid-transition; ignore */
+    }
+  };
+  await apply();
+  // Entering/leaving fullscreen fires a resize event.
+  return win.onResized(apply);
+}
+
 type Unlisten = () => void;
 
 async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {

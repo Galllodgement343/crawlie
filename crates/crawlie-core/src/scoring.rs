@@ -38,17 +38,29 @@ pub fn link_scores(pages: &[Page]) -> Vec<f32> {
             }
         }
     }
+    pagerank(&out)
+}
+
+/// PageRank over an explicit adjacency list (`adj[i]` = the page indices that
+/// page `i` links to). Returned normalized so the top page scores 100, index-
+/// aligned with `adj`. Shared by the in-memory crawl and the streaming crawl,
+/// which builds the same adjacency from an on-disk edge graph.
+pub fn pagerank(adj: &[Vec<usize>]) -> Vec<f32> {
+    let n = adj.len();
+    if n == 0 {
+        return Vec::new();
+    }
     let damping = 0.85f32;
     let mut rank = vec![1.0f32 / n as f32; n];
     for _ in 0..40 {
         let mut next = vec![(1.0 - damping) / n as f32; n];
         let mut dangling = 0.0f32;
         for i in 0..n {
-            if out[i].is_empty() {
+            if adj[i].is_empty() {
                 dangling += rank[i];
             } else {
-                let share = damping * rank[i] / out[i].len() as f32;
-                for &j in &out[i] {
+                let share = damping * rank[i] / adj[i].len() as f32;
+                for &j in &adj[i] {
                     next[j] += share;
                 }
             }
@@ -120,7 +132,13 @@ pub fn geo_score(p: &Page) -> u8 {
 
 /// Overall technical-SEO health, 0–100, from weighted issue density.
 pub fn health_score(pages: &[Page], issues: &[Issue]) -> u8 {
-    let n = pages.len().max(1) as f32;
+    health_score_n(pages.len(), issues)
+}
+
+/// Health score from a page *count* rather than the page slice — so the
+/// streaming crawl can score a crawl it never holds fully in memory.
+pub fn health_score_n(page_count: usize, issues: &[Issue]) -> u8 {
+    let n = page_count.max(1) as f32;
     let mut weight = 0f32;
     // GEO has its own dedicated score; don't let it drag down technical health.
     for i in issues.iter().filter(|i| i.category != Category::Geo) {

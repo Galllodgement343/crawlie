@@ -2,7 +2,8 @@
 //! crawl future stays `Send` and the non-`Send` scraper types never cross an
 //! await point. Extracts the full on-page signal set, including GEO signals.
 
-use crate::types::{GeoSignals, Hreflang};
+use crate::structured_data;
+use crate::types::{GeoSignals, Hreflang, SchemaValidation};
 use scraper::{Html, Selector};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
@@ -31,6 +32,8 @@ pub struct Parsed {
     pub og_image: Option<String>,
     pub twitter_card: Option<String>,
     pub schema_types: Vec<String>,
+    pub schema_validations: Vec<SchemaValidation>,
+    pub invalid_jsonld: usize,
     pub hreflang: Vec<Hreflang>,
     pub mixed_content: usize,
     pub geo: GeoSignals,
@@ -228,18 +231,30 @@ pub fn parse_html(body: &str, final_url: &Url, host: &str) -> Parsed {
         }
     }
 
-    // structured data (JSON-LD)
-    let mut schema_types = Vec::new();
+    // structured data (JSON-LD): collect each <script> block separately so we
+    // can validate it as standalone JSON, then check it against Google's
+    // rich-result requirements.
+    let mut json_ld_blocks: Vec<String> = Vec::new();
     let mut json_ld_text = String::new();
     for el in doc.select(&sel(r#"script[type="application/ld+json"]"#)) {
-        json_ld_text.push_str(&el.text().collect::<String>());
+        let block = el.text().collect::<String>();
+        json_ld_text.push_str(&block);
         json_ld_text.push('\n');
+        json_ld_blocks.push(block);
     }
-    for t in extract_schema_types(&json_ld_text) {
-        if !schema_types.contains(&t) {
-            schema_types.push(t);
+    let schema_report = structured_data::validate(&json_ld_blocks);
+    let mut schema_types = schema_report.types.clone();
+    // Union in any types from blocks that failed JSON parsing (the string scan
+    // still finds @type), so detection never regresses on malformed markup.
+    if schema_report.invalid_blocks > 0 {
+        for t in extract_schema_types(&json_ld_text) {
+            if !schema_types.contains(&t) {
+                schema_types.push(t);
+            }
         }
     }
+    let schema_validations = schema_report.items;
+    let invalid_jsonld = schema_report.invalid_blocks;
     let structured_data = !schema_types.is_empty();
     let faq_schema = schema_types
         .iter()
@@ -305,6 +320,8 @@ pub fn parse_html(body: &str, final_url: &Url, host: &str) -> Parsed {
         og_image,
         twitter_card,
         schema_types,
+        schema_validations,
+        invalid_jsonld,
         hreflang,
         mixed_content,
         geo,

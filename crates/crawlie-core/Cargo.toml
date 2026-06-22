@@ -13,6 +13,7 @@ reqwest = { workspace = true }
 flate2 = { workspace = true }
 brotli = { workspace = true }
 scraper = { workspace = true }
+rusqlite = { workspace = true }
 url = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -19,6 +19,7 @@ pub mod audit;
 pub mod crawler;
 pub mod fetch;
 pub mod knowledge;
+pub mod pagestore;
 pub mod parse;
 pub mod priority;
 pub mod report;
@@ -26,16 +27,18 @@ pub mod report_html;
 pub mod robots;
 pub mod scoring;
 pub mod sitemap;
+pub mod structured_data;
 pub mod timefmt;
 pub mod types;
 
-pub use crawler::{crawl, CancelToken};
+pub use crawler::{crawl, crawl_to_store, CancelToken};
+pub use pagestore::PageStore;
 pub use knowledge::{all_rules, rule_info};
 pub use priority::{group_issues, top_fixes, top_fixes_filtered};
 pub use report::ReportStore;
 pub use scoring::geo_gaps;
 pub use types::{
-    Category, CrawlConfig, CrawlError, CrawlEvent, CrawlMode, CrawlResult, Fix, GeoGaps,
-    GeoSignals, Hreflang, Issue, IssueGroup, Page, Redirect, ReportMeta, RuleInfo, Severity,
-    Summary,
+    Category, CrawlConfig, CrawlDiff, CrawlError, CrawlEvent, CrawlMode, CrawlResult, Fix, GeoGaps,
+    GeoSignals, Hreflang, Issue, IssueDelta, IssueGroup, Page, Redirect, ReportMeta, RuleInfo,
+    SchemaValidation, Severity, Summary,
 };

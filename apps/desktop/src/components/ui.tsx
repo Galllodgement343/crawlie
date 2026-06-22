@@ -97,21 +97,20 @@ export function Logo() {
       <span className="mark">
         {/* crawl-graph brand mark — matches the site favicon + app icon */}
         <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-          <g stroke="#3b9eff" strokeWidth="2" strokeLinecap="round">
+          <g stroke="#0055ee" strokeWidth="2" strokeLinecap="round">
             <path d="M16 16 L8 8" />
             <path d="M16 16 L24 9" />
             <path d="M16 16 L9 24" />
             <path d="M16 16 L24 23" />
           </g>
-          <circle cx="16" cy="16" r="3.6" fill="#3b9eff" />
-          <circle cx="8" cy="8" r="2.4" fill="#3ddc91" />
-          <circle cx="24" cy="9" r="2.4" fill="#f5b544" />
-          <circle cx="9" cy="24" r="2.4" fill="#f5f7fb" />
-          <circle cx="24" cy="23" r="2.4" fill="#ff6166" />
+          <circle cx="16" cy="16" r="3.6" fill="#0055ee" />
+          <circle cx="8" cy="8" r="2.4" fill="#0055ee" />
+          <circle cx="24" cy="9" r="2.4" fill="#0055ee" />
+          <circle cx="9" cy="24" r="2.4" fill="#0055ee" />
+          <circle cx="24" cy="23" r="2.4" fill="#0055ee" />
         </svg>
       </span>
-      <span>crawlie</span>
-      <span className="by">by Spronta</span>
+      <span className="wordmark">crawlie</span>
     </div>
   );
 }

@@ -2,7 +2,9 @@
 //! that stream progress, plus saved-report history backed by the core
 //! `ReportStore` in the app data directory.
 
-use crawlie_core::{crawl, report_html, CancelToken, CrawlConfig, CrawlResult, ReportMeta, ReportStore};
+use crawlie_core::{
+    crawl, report_html, CancelToken, CrawlConfig, CrawlDiff, CrawlResult, ReportMeta, ReportStore,
+};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -117,6 +119,15 @@ fn delete_report(app: AppHandle, id: String) -> Result<(), String> {
     store(&app).delete(&id).map_err(|e| e.to_string())
 }
 
+/// Compare two saved crawls (crawl-over-crawl trend). Returns `None` if either
+/// id is unknown.
+#[tauri::command]
+fn diff_reports(app: AppHandle, old_id: String, new_id: String) -> Result<Option<CrawlDiff>, String> {
+    store(&app)
+        .diff(&old_id, &new_id)
+        .map_err(|e| e.to_string())
+}
+
 /// Render a shareable, self-contained HTML report and save it (to Downloads if
 /// possible). Returns the absolute path written.
 #[tauri::command]
@@ -150,6 +161,7 @@ pub fn run() {
             list_reports,
             load_report,
             delete_report,
+            diff_reports,
             save_html_report,
             get_settings,
             set_settings

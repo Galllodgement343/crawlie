@@ -41,30 +41,138 @@ a:hover {
 /* ---------- App shell ---------- */
 .app {
   display: flex;
-  flex-direction: column;
-  min-height: 100%;
+  min-height: 100vh;
 }
 
-.topbar {
+/* ---------- Sidebar ---------- */
+.sidebar {
   position: sticky;
   top: 0;
   z-index: 20;
+  flex: none;
+  width: 224px;
+  height: 100vh;
   display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  height: 52px;
-  /* leave room for macOS traffic lights under the overlay titlebar */
-  padding: 0 var(--sp-5) 0 80px;
-  /* subtle gray accent bar — light gray on light, dark gray on dark */
-  background: color-mix(in srgb, var(--bg-2) 92%, transparent);
-  backdrop-filter: saturate(180%) blur(12px);
-  border-bottom: 1px solid var(--border);
+  flex-direction: column;
+  gap: var(--sp-1);
+  /* leave room for the macOS traffic lights under the overlay titlebar */
+  padding: 40px var(--sp-3) var(--sp-4);
+  background: var(--bg-subtle);
+  border-right: 1px solid var(--border);
+  -webkit-app-region: drag;
+  transition: width var(--t-med) var(--ease);
 }
-/* interactive elements in the draggable titlebar must opt out of dragging */
-.topbar button,
-.topbar a {
+/* In fullscreen the macOS traffic lights are gone — reclaim that top space. */
+:root[data-fullscreen="true"] .sidebar {
+  padding-top: var(--sp-4);
+}
+/* interactive elements in the draggable sidebar must opt out of dragging */
+.sidebar button,
+.sidebar a {
   app-region: no-drag;
   -webkit-app-region: no-drag;
+}
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-2) var(--sp-2) var(--sp-5);
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sidebar-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+.sidebar-foot-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.collapse-toggle svg {
+  transition: transform var(--t-med) var(--ease);
+  transform: rotate(180deg); /* points left = "collapse" */
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font: var(--label-14);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+.nav-item svg {
+  flex: none;
+}
+.nav-item:hover {
+  background: var(--bg-2);
+  color: var(--text);
+}
+.nav-item.active {
+  background: var(--blue-bg);
+  color: var(--blue);
+  border-color: var(--blue-border);
+}
+
+/* ---------- Collapsed sidebar ---------- */
+.sidebar.collapsed {
+  width: 64px;
+  padding-left: var(--sp-2);
+  padding-right: var(--sp-2);
+}
+.sidebar.collapsed .sidebar-brand {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+.sidebar.collapsed .wordmark,
+.sidebar.collapsed .nav-label {
+  display: none;
+}
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  gap: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+.sidebar.collapsed .sidebar-foot {
+  align-items: stretch;
+}
+.sidebar.collapsed .sidebar-foot-row {
+  flex-direction: column;
+  align-items: center;
+}
+.sidebar.collapsed .collapse-toggle svg {
+  transform: rotate(0deg); /* points right = "expand" */
+}
+
+/* ---------- Content column ---------- */
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* new-release banner */
@@ -143,10 +251,6 @@ a:hover {
 }
 .switch.on .knob {
   transform: translateX(18px);
-}
-
-.topbar .spacer {
-  flex: 1;
 }
 
 .logo {

@@ -222,6 +222,18 @@ entries! {
         "Schema.org structured data unlocks rich results (stars, FAQs, breadcrumbs) and is increasingly how AI engines understand and cite a page.",
         "Add relevant JSON-LD (Article, Product, FAQPage, BreadcrumbList, Organization) matching the page's content.",
         "No rich results and reduced machine understanding of the page.";
+    "structured-data-invalid" => "Invalid Structured Data", StructuredData, Error,
+        "A JSON-LD block on this page isn't valid JSON, so search engines and AI engines skip it entirely — the markup might as well not exist. Common causes are trailing commas, unescaped quotes, or template variables that didn't render.",
+        "Open the page's JSON-LD and run it through Google's Rich Results Test or a JSON validator. Fix the syntax error (often a stray comma or unquoted key) so every <script type=\"application/ld+json\"> block parses cleanly.",
+        "All structured data on the page is ignored — no rich results and no machine understanding.";
+    "schema-missing-required" => "Schema Missing Required Field", StructuredData, Warning,
+        "This structured-data item is missing a property Google requires for its rich result. Without every required field, the page is ineligible for the enhanced search appearance even though the markup is present.",
+        "Add the missing required properties to the JSON-LD for that type (e.g. price and priceCurrency on an Offer, name and image on a Product). Validate with Google's Rich Results Test until it reports no errors.",
+        "The rich result won't show, so you lose the enhanced listing and its click-through advantage.";
+    "schema-missing-recommended" => "Schema Missing Recommended Field", StructuredData, Notice,
+        "This structured-data item omits properties Google recommends. The rich result can still appear, but recommended fields make it richer and more competitive (ratings, dates, images, authorship).",
+        "Add the recommended properties where they apply (e.g. aggregateRating and brand on a Product, datePublished and author on an Article) to strengthen the listing.",
+        "A thinner rich result that may lose to more complete competitors.";
 
     // ---- GEO (Generative Engine Optimization) ----
     "geo-no-structured-data" => "GEO: No Machine-Readable Structure", Geo, Warning,

@@ -167,6 +167,14 @@ fn tools_list() -> Value {
                 "includeIssues": { "type": "boolean", "default": false },
                 "includePages": { "type": "boolean", "default": false }
             }, "required": ["id"] }
+        },
+        {
+            "name": "diff_reports",
+            "description": "Compare two saved crawls of the same site (crawl-over-crawl trend). Returns health/GEO score deltas, pages added/removed, and issues that newly appeared or were resolved (grouped by rule). Use it to verify fixes landed or catch regressions between crawls.",
+            "inputSchema": { "type": "object", "properties": {
+                "oldId": { "type": "string", "description": "The earlier report id." },
+                "newId": { "type": "string", "description": "The later report id, or 'latest' (default)." }
+            }, "required": ["oldId"] }
         }
     ] })
 }
@@ -318,6 +326,31 @@ async fn tools_call(params: Value) -> Result<Value, String> {
             match ReportStore::new(reports_dir()).load(id) {
                 Some(result) => result_payload(&result, include_pages, include_issues),
                 None => Err(format!("report '{id}' not found")),
+            }
+        }
+        "diff_reports" => {
+            let old_id = args
+                .get("oldId")
+                .and_then(|v| v.as_str())
+                .ok_or("missing oldId")?;
+            let store = ReportStore::new(reports_dir());
+            // 'latest' (the default) resolves to the newest saved report.
+            let new_id = match args.get("newId").and_then(|v| v.as_str()) {
+                Some(id) if id != "latest" => id.to_string(),
+                _ => store
+                    .list()
+                    .into_iter()
+                    .next()
+                    .map(|m| m.id)
+                    .ok_or("no saved reports to diff against")?,
+            };
+            match store.diff(old_id, &new_id).map_err(|e| e.to_string())? {
+                Some(diff) => {
+                    text_result(serde_json::to_string_pretty(&diff).unwrap_or_default())
+                }
+                None => Err(format!(
+                    "one or both reports not found ('{old_id}', '{new_id}')"
+                )),
             }
         }
         other => Err(format!("unknown tool: {other}")),
