@@ -4,6 +4,18 @@ All notable changes to crawlie are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-06-23
+
+Crawl bigger, see what changed, and validate your structured data — this release closes three of the biggest gaps between crawlie and the heavyweight desktop crawlers.
+
+### Added
+- **Crawl any size of site, without running out of memory** — the new streaming engine (`crawlie crawl --store <path>`) spills every page to an on-disk SQLite database as it crawls, then runs the full audit by streaming pages back one at a time. The crawl file is the artifact: peak memory stays bounded by a compact index instead of the whole site, so large crawls no longer mean the whole site in RAM.
+- **Crawl-over-crawl diffing** — `crawlie diff <old> <new>` shows exactly what changed between two crawls: health and GEO score deltas, pages added and removed, and issues that newly appeared or were resolved (grouped by rule). The same is available to agents via the MCP `diff_reports` tool, and to the desktop app. Verify a fix actually landed, or catch a regression before it ships.
+- **Structured-data validation** — crawlie now parses your JSON-LD properly (including `@graph` and nested types like an `Offer` inside a `Product`) and checks each item against Google's rich-result requirements. New findings flag **invalid JSON-LD** that search engines silently skip, **missing required fields** that make a rich result ineligible, and **missing recommended fields** that leave it weaker than it could be — across Article, Product, Recipe, Event, FAQ, Breadcrumb, JobPosting, LocalBusiness, and more.
+
+### Changed
+- **Saved reports now live in SQLite** — crawl history is stored in a single queryable `crawlie.db` instead of loose JSON files. Existing reports are imported automatically the first time you run this version; nothing to do.
+
 ## [0.3.0] - 2026-06-21
 
 The biggest release yet: crawlie gains a deterministic content-quality engine, self-updating apps, and its own changelog.
