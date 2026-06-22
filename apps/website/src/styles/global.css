@@ -26,6 +26,10 @@
   --border-soft: #1b212c;
 
   --blue: #0055ee;
+  /* Accessible link/foreground blue: the brand seed-node colour, 7:1 on --bg
+     (the primary --blue is only ~3.3:1, fine for solid-button fills but not
+     for text or thin accents). */
+  --link: #3b9eff;
   --baby-blue: #8ec5ff;
   --blue-ink: #0a1726;
   --green: #3ddc91;
@@ -65,7 +69,7 @@ body {
 }
 
 a {
-  color: var(--blue);
+  color: var(--link);
   text-decoration: none;
 }
 a:hover { text-decoration: underline; }

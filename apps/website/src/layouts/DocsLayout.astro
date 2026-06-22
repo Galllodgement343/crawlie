@@ -96,17 +96,18 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
     display: flex; align-items: center; justify-content: center; gap: 7px;
     margin-bottom: 22px; padding: 9px 12px;
     font-size: 13.5px; font-weight: 600;
-    color: var(--blue); border-radius: 7px;
-    border: 1px solid color-mix(in srgb, var(--blue) 40%, transparent);
-    background: color-mix(in srgb, var(--blue) 8%, transparent);
-    transition: background 0.15s ease, border-color 0.15s ease;
+    color: var(--blue-ink); border-radius: 7px;
+    border: 1px solid transparent;
+    background: var(--text);
+    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.3);
+    transition: background 0.15s ease, transform 0.05s ease;
   }
   .sidebar-download:hover {
     text-decoration: none;
-    color: var(--blue);
-    background: color-mix(in srgb, var(--blue) 14%, transparent);
-    border-color: color-mix(in srgb, var(--blue) 60%, transparent);
+    color: var(--blue-ink);
+    background: #fff;
   }
+  .sidebar-download:active { transform: translateY(1px); }
   .group { margin-bottom: 22px; }
   .group-title {
     font-family: var(--font-mono); font-size: 11px; text-transform: uppercase;
@@ -119,8 +120,8 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
   }
   .sidebar li a:hover { color: var(--text); background: var(--panel); text-decoration: none; }
   .sidebar li a.active {
-    color: var(--blue); background: color-mix(in srgb, var(--blue) 8%, transparent);
-    border-left-color: var(--blue);
+    color: var(--link); background: color-mix(in srgb, var(--link) 10%, transparent);
+    border-left-color: var(--link);
   }
 
   .content { min-width: 0; }

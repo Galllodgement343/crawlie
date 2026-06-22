@@ -425,10 +425,10 @@ const cell = (v: string) =>
     color: #c2cad6;
   }
   .term-body .u { color: var(--muted); }
-  .term-body .t { color: var(--blue); }
+  .term-body .t { color: var(--link); }
   .term-body .b { color: var(--text); font-weight: 600; }
   .term-body .g { color: var(--green); }
-  .term-body .a { color: var(--blue); }
+  .term-body .a { color: var(--link); }
   .term-body .r { color: var(--red); }
   .term-body .y { color: var(--amber); }
 
@@ -460,7 +460,7 @@ const cell = (v: string) =>
   tbody tr:last-child td { border-bottom: 0; }
   td.label, th:first-child { text-align: left; color: var(--text); font-weight: 500; }
   .us { background: rgba(59,158,255,0.06); }
-  th.us { color: var(--blue); font-weight: 600; }
+  th.us { color: var(--link); font-weight: 600; }
   td.us { color: var(--text); font-weight: 560; }
   /* color the yes/no glyphs */
   td[data-v='yes']::before, td[data-v='every issue']::before { color: var(--green); }
